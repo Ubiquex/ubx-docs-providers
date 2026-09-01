@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
-import { getDataSource, getProvider, listCachedVersions, listResources } from "@/lib/docs";
+import { getDataSource, getProvider, listCachedVersions, listProviders, listResources } from "@/lib/docs";
+import { dataSourceExample } from "@/lib/examples";
 
 // Data sources live under their own /data/ segment, matching the real
 // generated package layout every SDK language already uses
@@ -15,37 +16,15 @@ import { getDataSource, getProvider, listCachedVersions, listResources } from "@
 // same distinction or the two would collide.
 export function generateStaticParams() {
   const params: { provider: string; version: string; service: string; resource: string }[] = [];
-  for (const version of listCachedVersions("kubernetes")) {
-    for (const r of listResources("kubernetes", version)) {
-      if (!r.isDataSource) continue;
-      params.push({ provider: "kubernetes", version, service: r.service, resource: r.localName });
+  for (const provider of Object.keys(listProviders())) {
+    for (const version of listCachedVersions(provider)) {
+      for (const r of listResources(provider, version)) {
+        if (!r.isDataSource) continue;
+        params.push({ provider, version, service: r.service, resource: r.localName });
+      }
     }
   }
   return params;
-}
-
-function examplesFor(service: string, localName: string, dottedName: string) {
-  const pascal = dottedName.split(".")[1];
-  return {
-    go: `import "github.com/ubiquex/ubx-sdk-kubernetes/sdk/go/kubernetes/data/${service}"
-
-sdk.Data(${service}.${pascal}, "example", ${service}.${pascal}Lookup{
-	// ...
-})
-`,
-    typescript: `import { ${pascal} } from "@ubx/sdk-kubernetes/data/${service}";
-
-data(${pascal}, "example", {
-  // ...
-});
-`,
-    python: `from ubx.kubernetes.data.${service}.${localName} import ${pascal}
-
-data(${pascal}, "example", {
-    # ...
-})
-`,
-  };
 }
 
 export default async function DataSourcePage({
@@ -61,6 +40,7 @@ export default async function DataSourcePage({
   if (!detail) notFound();
 
   const siblings = listResources(provider, version).filter((r) => r.service === service);
+  const pascal = detail.dottedName.split(".")[1];
 
   return (
     <>
@@ -73,7 +53,7 @@ export default async function DataSourcePage({
         resource={resource}
         detail={detail}
         siblings={siblings}
-        examples={examplesFor(service, resource, detail.dottedName)}
+        examples={dataSourceExample(provider, cfg.goModule, service, resource, pascal)}
       />
     </>
   );

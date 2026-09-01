@@ -3,51 +3,23 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { TierBadge } from "@/components/TierBadge";
 import { LanguageTabs } from "@/components/LanguageTabs";
-import { ServiceGroupCard } from "@/components/ServiceGroupCard";
-import { getManifest, getProvider, listCachedVersions, listServiceGroups, versionExists } from "@/lib/docs";
+import { ServiceGroupBrowser } from "@/components/ServiceGroupBrowser";
+import {
+  getManifest,
+  getProvider,
+  listCachedVersions,
+  listProviders,
+  listServiceGroups,
+  pickStarterResource,
+  versionExists,
+} from "@/lib/docs";
+import { starterExample } from "@/lib/examples";
 
 export function generateStaticParams() {
-  return listCachedVersions("kubernetes").map((version) => ({ provider: "kubernetes", version }));
+  return Object.keys(listProviders()).flatMap((provider) =>
+    listCachedVersions(provider).map((version) => ({ provider, version })),
+  );
 }
-
-const STARTER_EXAMPLES = {
-  go: `package main
-
-import (
-	sdk "github.com/ubiquex/ubx-sdk-go/runtime"
-	"github.com/ubiquex/ubx-sdk-kubernetes/sdk/go/kubernetes/core"
-)
-
-func main() {
-	sdk.Main(sdk.Stack("platform", func() {
-		sdk.Intent(sdk.IntentInfo{Summary: "a namespace for the platform team"})
-		sdk.Resource(core.Namespace, "platform", core.NamespaceConfig{
-			Metadata: map[string]any{"name": "platform"},
-		})
-	}))
-}
-`,
-  typescript: `import { stack, resource, intent } from "@ubx/sdk";
-import { Namespace } from "@ubx/sdk-kubernetes/core";
-
-stack("platform", () => {
-  intent("a namespace for the platform team");
-  resource(Namespace, "platform", {
-    metadata: { name: "platform" },
-  });
-});
-`,
-  python: `from ubx_sdk import stack, resource, intent
-from ubx.kubernetes.core.namespace import Namespace
-
-stack("platform", lambda: [
-    intent("a namespace for the platform team"),
-    resource(Namespace, "platform", {
-        "metadata": {"name": "platform"},
-    }),
-])
-`,
-};
 
 export default async function ProviderHomePage({
   params,
@@ -60,6 +32,12 @@ export default async function ProviderHomePage({
 
   const manifest = getManifest(provider, version);
   const groups = listServiceGroups(provider, version);
+  const starter = pickStarterResource(provider, version);
+  const pascal = starter?.dottedName.split(".")[1];
+  const starterExamples =
+    starter && pascal
+      ? starterExample(provider, cfg.goModule, starter.service, starter.localName, pascal)
+      : null;
 
   return (
     <>
@@ -76,37 +54,32 @@ export default async function ProviderHomePage({
           <span className="font-mono-tabular">v{version}</span>
         </div>
 
-        <section className="mt-10">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground-muted">
-            Get started
-          </h2>
-          <div className="mt-3">
-            <LanguageTabs examples={STARTER_EXAMPLES} />
-          </div>
-          <p className="mt-3 text-sm text-foreground-muted">
-            See a full page for this example&rsquo;s own resource:{" "}
-            <Link href={`/${provider}/${version}/core/namespace`} className="text-primary underline">
-              core.Namespace
-            </Link>
-          </p>
-        </section>
+        {starter && starterExamples && (
+          <section className="mt-10">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground-muted">
+              Get started
+            </h2>
+            <div className="mt-3">
+              <LanguageTabs examples={starterExamples} />
+            </div>
+            <p className="mt-3 text-sm text-foreground-muted">
+              See a full page for this example&rsquo;s own resource:{" "}
+              <Link
+                href={`/${provider}/${version}/${starter.service}/${starter.localName}`}
+                className="text-primary underline"
+              >
+                {starter.dottedName}
+              </Link>
+            </p>
+          </section>
+        )}
 
         <section className="mt-10">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground-muted">
             Service groups
           </h2>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {groups.map((g) => (
-              <ServiceGroupCard
-                key={g.service}
-                providerKey={provider}
-                version={version}
-                service={g.service}
-                label={g.label}
-                resourceCount={g.resourceCount}
-                dataSourceCount={g.dataSourceCount}
-              />
-            ))}
+          <div className="mt-3">
+            <ServiceGroupBrowser groups={groups} providerKey={provider} version={version} />
           </div>
         </section>
       </main>
