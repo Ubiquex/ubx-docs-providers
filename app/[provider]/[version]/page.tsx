@@ -99,6 +99,9 @@ export default async function ProviderHomePage({
             {groups.map((g) => (
               <ServiceGroupCard
                 key={g.service}
+                providerKey={provider}
+                version={version}
+                service={g.service}
                 label={g.label}
                 resourceCount={g.resourceCount}
                 dataSourceCount={g.dataSourceCount}

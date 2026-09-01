@@ -40,6 +40,10 @@ yarn-error.log*
 # checksummed release, never committed
 /.docs-cache
 
+# build-search-index.mjs' own output -- regenerated every build from
+# .docs-cache, never committed
+/public/search-index.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
