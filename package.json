@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "fetch-docs": "node scripts/fetch-docs.mjs",
-    "dev": "npm run fetch-docs && next dev",
-    "prebuild": "npm run fetch-docs",
+    "build-search-index": "node scripts/build-search-index.mjs",
+    "dev": "npm run fetch-docs && npm run build-search-index && next dev",
+    "prebuild": "npm run fetch-docs && npm run build-search-index",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

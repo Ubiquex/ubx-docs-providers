@@ -6,7 +6,7 @@
       "description": "Deployments, services, config, and everything else a real cluster runs.",
       "repo": "ubiquex/ubx-sdk-kubernetes",
       "tier": "official",
-      "versions": ["1.1.0"]
+      "versions": ["1.0.0", "1.1.0"]
     }
   }
 }

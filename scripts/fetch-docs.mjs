@@ -77,9 +77,25 @@ function fromCache(provider, version) {
   return { dir, manifest, source: "cache" };
 }
 
+// A real GITHUB_TOKEN, when present (CI always has one via
+// ${{ github.token }}), authenticates every request -- avoids the
+// unauthenticated API's own lower rate limit and, confirmed live
+// (UBI-240 slice 2), its own real propagation lag for a release only
+// seconds old (the authenticated `gh api` path returned the same
+// release cleanly while the anonymous path 504'd for several minutes).
+// Optional everywhere else -- a local `npm run dev` with no token set
+// still works, just against the same limits any anonymous caller has.
+const githubToken = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+
+function ghHeaders(accept) {
+  const headers = { Accept: accept };
+  if (githubToken) headers.Authorization = `Bearer ${githubToken}`;
+  return headers;
+}
+
 async function ghJSON(path) {
   const res = await fetch(`${githubAPIBase}${path}`, {
-    headers: { Accept: "application/vnd.github+json" },
+    headers: ghHeaders("application/vnd.github+json"),
   });
   if (!res.ok) {
     throw new Error(`GitHub API ${path}: ${res.status} ${res.statusText}`);
@@ -89,7 +105,7 @@ async function ghJSON(path) {
 
 async function downloadAsset(url) {
   const res = await fetch(url, {
-    headers: { Accept: "application/octet-stream" },
+    headers: ghHeaders("application/octet-stream"),
   });
   if (!res.ok) {
     throw new Error(`download ${url}: ${res.status} ${res.statusText}`);

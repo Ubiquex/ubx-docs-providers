@@ -1,19 +1,23 @@
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
-import { getProvider, getResource, listCachedVersions, listResources } from "@/lib/docs";
+import { getDataSource, getProvider, listCachedVersions, listResources } from "@/lib/docs";
 
-// UBI-240 slice 2: every real resource at every real cached version, not
-// just the one namespace.core page slice 1 proved the mechanism with.
-// Loops the real schema each cached version actually has -- a version
-// missing a resource simply never gets a params entry for it, and any
-// URL guessing at one falls through to Next's own real notFound()
-// below, the same honest 404 the version selector relies on.
+// Data sources live under their own /data/ segment, matching the real
+// generated package layout every SDK language already uses
+// (sdk/go/kubernetes/data/<service>/..., ubx.kubernetes.data.<service>
+// in Python) -- not an invented URL convention. Needed because a
+// resource and a same-named data source share the identical wire
+// binding NAME (both are just "Namespace", confirmed directly against
+// the real generated Go: kubernetes/core/namespace.go and
+// kubernetes/data/core/namespace.go both declare `var Namespace`),
+// only the import path tells them apart -- the URL has to carry that
+// same distinction or the two would collide.
 export function generateStaticParams() {
   const params: { provider: string; version: string; service: string; resource: string }[] = [];
   for (const version of listCachedVersions("kubernetes")) {
     for (const r of listResources("kubernetes", version)) {
-      if (r.isDataSource) continue;
+      if (!r.isDataSource) continue;
       params.push({ provider: "kubernetes", version, service: r.service, resource: r.localName });
     }
   }
@@ -23,28 +27,28 @@ export function generateStaticParams() {
 function examplesFor(service: string, localName: string, dottedName: string) {
   const pascal = dottedName.split(".")[1];
   return {
-    go: `import "github.com/ubiquex/ubx-sdk-kubernetes/sdk/go/kubernetes/${service}"
+    go: `import "github.com/ubiquex/ubx-sdk-kubernetes/sdk/go/kubernetes/data/${service}"
 
-sdk.Resource(${service}.${pascal}, "example", ${service}.${pascal}Config{
+sdk.Data(${service}.${pascal}, "example", ${service}.${pascal}Lookup{
 	// ...
 })
 `,
-    typescript: `import { ${pascal} } from "@ubx/sdk-kubernetes/${service}";
+    typescript: `import { ${pascal} } from "@ubx/sdk-kubernetes/data/${service}";
 
-resource(${pascal}, "example", {
+data(${pascal}, "example", {
   // ...
 });
 `,
-    python: `from ubx.kubernetes.${service}.${localName} import ${pascal}
+    python: `from ubx.kubernetes.data.${service}.${localName} import ${pascal}
 
-resource(${pascal}, "example", {
+data(${pascal}, "example", {
     # ...
 })
 `,
   };
 }
 
-export default async function ResourcePage({
+export default async function DataSourcePage({
   params,
 }: {
   params: Promise<{ provider: string; version: string; service: string; resource: string }>;
@@ -53,7 +57,7 @@ export default async function ResourcePage({
   const cfg = getProvider(provider);
   if (!cfg) notFound();
 
-  const detail = getResource(provider, version, service, resource);
+  const detail = getDataSource(provider, version, service, resource);
   if (!detail) notFound();
 
   const siblings = listResources(provider, version).filter((r) => r.service === service);

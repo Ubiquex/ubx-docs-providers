@@ -112,14 +112,22 @@ export type ResourceSummary = {
 export function listResources(providerKey: string, version: string): ResourceSummary[] {
   const index = loadSchemaIndex(providerKey, version);
   const categories = loadCategories(providerKey, version);
-  return Object.entries(index).map(([wireType, entry]) => ({
-    wireType,
-    service: entry.service,
-    localName: entry.localName,
-    isDataSource: wireType.startsWith("data_"),
-    dottedName: `${entry.service}.${pascalCase(entry.localName)}`,
-    category: categories.overrides[wireType]?.label ?? titleCase(entry.service),
-  }));
+  return Object.entries(index).map(([wireType, entry]) => {
+    // categories.json's own overrides are keyed WITHOUT the "data_"
+    // prefix even for a data source -- confirmed directly against the
+    // real file, not assumed (a data source's own category lookup
+    // silently fell through to the plain title-cased service name
+    // until this was checked).
+    const categoryKey = wireType.startsWith("data_") ? wireType.slice("data_".length) : wireType;
+    return {
+      wireType,
+      service: entry.service,
+      localName: entry.localName,
+      isDataSource: wireType.startsWith("data_"),
+      dottedName: `${entry.service}.${pascalCase(entry.localName)}`,
+      category: categories.overrides[categoryKey]?.label ?? titleCase(entry.service),
+    };
+  });
 }
 
 function titleCase(s: string): string {
@@ -157,15 +165,21 @@ export function formatFieldType(t: Field["Type"]): string {
   }
 }
 
-export function getResource(
+// getResourceOrDataSource is the one shared lookup both getResource and
+// getDataSource call -- identical logic either way, only the
+// isDataSource filter differs, matching this project's own "one
+// implementation, not two" discipline rather than two near-identical
+// copies that could quietly diverge.
+function getResourceOrDataSource(
   providerKey: string,
   version: string,
   service: string,
   localName: string,
+  isDataSource: boolean,
 ): ResourceDetail | undefined {
   const resources = listResources(providerKey, version);
   const summary = resources.find(
-    (r) => r.service === service && r.localName === localName && !r.isDataSource,
+    (r) => r.service === service && r.localName === localName && r.isDataSource === isDataSource,
   );
   if (!summary) return undefined;
 
@@ -176,7 +190,33 @@ export function getResource(
   return { ...summary, fields, intro: intros[summary.wireType] ?? null };
 }
 
-const descriptionsCache: Map<string, Record<string, string>> = new Map();
+export function getResource(
+  providerKey: string,
+  version: string,
+  service: string,
+  localName: string,
+): ResourceDetail | undefined {
+  return getResourceOrDataSource(providerKey, version, service, localName, false);
+}
+
+export function getDataSource(
+  providerKey: string,
+  version: string,
+  service: string,
+  localName: string,
+): ResourceDetail | undefined {
+  return getResourceOrDataSource(providerKey, version, service, localName, true);
+}
+
+// Every real entry in artifacts/descriptions.json is {source, text} --
+// confirmed directly against the real file (16,421 entries for
+// kubernetes@1.1.0, all objects, none a bare string), not the flat
+// string map an earlier pass assumed without checking. source records
+// provenance (vendor-spec, ai, ai-dictionary, ai-sdk-inferred, per
+// ubiquex-docs' own manifest.json) -- this site only ever needs text.
+type DescriptionEntry = { source: string; text: string };
+
+const descriptionsCache: Map<string, Record<string, DescriptionEntry>> = new Map();
 
 // fieldDescription looks up "<wire_type>.<field_path>" in artifacts/
 // descriptions.json -- lazily loaded and cached per (provider, version)
@@ -195,7 +235,7 @@ export function fieldDescription(
     descriptions = JSON.parse(readFileSync(p, "utf8"));
     descriptionsCache.set(key, descriptions!);
   }
-  return descriptions![`${wireType}.${fieldPath}`] ?? null;
+  return descriptions![`${wireType}.${fieldPath}`]?.text ?? null;
 }
 
 function loadIntros(providerKey: string, version: string): Record<string, string> {

@@ -1,5 +1,6 @@
 import { Header } from "@/components/Header";
-import { ProviderSearch } from "@/components/ProviderSearch";
+import { GlobalSearch } from "@/components/GlobalSearch";
+import { ProviderCard } from "@/components/ProviderCard";
 import { TierLegend } from "@/components/TierLegend";
 import { getManifest, latestVersion, listProviders } from "@/lib/docs";
 
@@ -27,15 +28,21 @@ export default function HomePage() {
           Provider reference for <span className="text-primary">ubx</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-center text-foreground-muted">
-          Resource and data source reference, one page per version, generated straight from
-          each SDK&rsquo;s own real schema.
+          Resource and data source reference, one page per version, generated straight
+          from each SDK&rsquo;s own real schema.
         </p>
 
         <div className="mx-auto mt-8 max-w-xl">
-          <ProviderSearch providers={cards} />
+          <GlobalSearch />
         </div>
 
-        <div className="mx-auto mt-12 max-w-xl">
+        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map((c) => (
+            <ProviderCard key={c.providerKey} {...c} />
+          ))}
+        </div>
+
+        <div className="mt-12">
           <TierLegend />
         </div>
       </main>

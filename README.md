@@ -10,13 +10,15 @@ Versioned per SDK release, like Terraform's own provider docs: a
 reader on `ubx-sdk-aws` 2.1.0 sees that version's pages, sealed, never
 edited in place. Fixing a typo means cutting a new SDK version.
 
-## Slice 1 (UBI-240)
+## Slices 1 and 2 (UBI-240)
 
-Kubernetes only, three page types (landing, provider home, one
-resource page), proving the fetch/render/version mechanism before
-building it wide across all seven providers. See `CLAUDE.md` for the
-full account of what's real and what's deliberately deferred to a
-later slice.
+Kubernetes only, still -- proving the mechanism before building it
+wide across all seven providers. Every real resource (92) and data
+source (75), a real per-service listing page, real search, and two
+real versions with a working version selector (`v1.0.0`, `v1.1.0`).
+AWS is deliberately held pending its own service-group-count problem
+getting designed first. See `CLAUDE.md` for the full account, including
+two real bugs slice 2 found and fixed by testing rather than assuming.
 
 ## Development
 
