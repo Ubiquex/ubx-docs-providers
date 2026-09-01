@@ -16,6 +16,7 @@ export type ProviderConfig = {
   repo: string;
   tier: "official" | "verified" | "community";
   versions: string[];
+  goModule?: string;
 };
 
 export function listProviders(): Record<string, ProviderConfig> {
@@ -83,9 +84,24 @@ type SchemaEntry = {
 
 type SchemaIndex = Record<string, SchemaEntry>;
 
+// Memoized per (provider, version) -- unlike Kubernetes's own ~167
+// resources+data sources, a provider at AWS's real scale (thousands of
+// entries) gets listResources called once per provider/service page
+// PLUS once per resource/data-source page (for its own sibling list),
+// so an unmemoized re-parse of the combined schema.json on every call
+// multiplies real build time by however many pages exist. Matches
+// fieldDescription's own existing descriptionsCache pattern below.
+const schemaIndexCache: Map<string, SchemaIndex> = new Map();
+
 function loadSchemaIndex(providerKey: string, version: string): SchemaIndex {
-  const p = join(versionDir(providerKey, version), "schema", "schema.json");
-  return JSON.parse(readFileSync(p, "utf8"));
+  const key = `${providerKey}@${version}`;
+  let index = schemaIndexCache.get(key);
+  if (!index) {
+    const p = join(versionDir(providerKey, version), "schema", "schema.json");
+    index = JSON.parse(readFileSync(p, "utf8"));
+    schemaIndexCache.set(key, index!);
+  }
+  return index!;
 }
 
 // pascalCase turns a snake_case localName into the dotted SDK form's own
@@ -238,16 +254,32 @@ export function fieldDescription(
   return descriptions![`${wireType}.${fieldPath}`]?.text ?? null;
 }
 
+const introsCache: Map<string, Record<string, string>> = new Map();
+
 function loadIntros(providerKey: string, version: string): Record<string, string> {
-  const p = join(versionDir(providerKey, version), "artifacts", "intros.json");
-  return JSON.parse(readFileSync(p, "utf8"));
+  const key = `${providerKey}@${version}`;
+  let intros = introsCache.get(key);
+  if (!intros) {
+    const p = join(versionDir(providerKey, version), "artifacts", "intros.json");
+    intros = JSON.parse(readFileSync(p, "utf8"));
+    introsCache.set(key, intros!);
+  }
+  return intros!;
 }
 
 type Categories = { overrides: Record<string, { label: string }> };
 
+const categoriesCache: Map<string, Categories> = new Map();
+
 function loadCategories(providerKey: string, version: string): Categories {
-  const p = join(versionDir(providerKey, version), "artifacts", "categories.json");
-  return JSON.parse(readFileSync(p, "utf8"));
+  const key = `${providerKey}@${version}`;
+  let categories = categoriesCache.get(key);
+  if (!categories) {
+    const p = join(versionDir(providerKey, version), "artifacts", "categories.json");
+    categories = JSON.parse(readFileSync(p, "utf8"));
+    categoriesCache.set(key, categories!);
+  }
+  return categories!;
 }
 
 export type ServiceGroup = {
@@ -275,6 +307,39 @@ export function listServiceGroups(providerKey: string, version: string): Service
     }
   }
   return [...groups.values()].sort((a, b) => a.service.localeCompare(b.service));
+}
+
+// pickStarterResource chooses the real resource the provider home
+// page's own "Get started" example builds around -- the one with the
+// fewest required fields (ties broken by fewest total fields, then
+// dottedName for determinism), not a hardcoded per-provider resource
+// name. Reading every resource's own field file once here (called once
+// per provider home page render, not per resource page) is cheap next
+// to the alternative of guessing a "good" example by hand for six more
+// providers as they're brought in.
+export function pickStarterResource(
+  providerKey: string,
+  version: string,
+): (ResourceSummary & { fields: Field[] }) | undefined {
+  const resources = listResources(providerKey, version).filter((r) => !r.isDataSource);
+  let best: (ResourceSummary & { fields: Field[] }) | undefined;
+  let bestRequired = Infinity;
+  let bestTotal = Infinity;
+  for (const r of resources) {
+    const p = join(versionDir(providerKey, version), "schema", `${r.wireType}.json`);
+    const fields: Field[] = JSON.parse(readFileSync(p, "utf8"));
+    const required = fields.filter((f) => f.Required).length;
+    if (
+      required < bestRequired ||
+      (required === bestRequired && fields.length < bestTotal) ||
+      (required === bestRequired && fields.length === bestTotal && (!best || r.dottedName < best.dottedName))
+    ) {
+      best = { ...r, fields };
+      bestRequired = required;
+      bestTotal = fields.length;
+    }
+  }
+  return best;
 }
 
 // listCachedVersions returns every version actually present in

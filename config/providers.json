@@ -1,5 +1,5 @@
 {
-  "$comment": "One entry per provider. versions lists every version this site serves, latest last -- the committed list, not a live release-list query per repo per build (UBI-240: a build that queries live lists produces different output depending on when it runs). Adding a version is a one-line change, visible in review. repo is the real GitHub repo the docs release lives on; each version's own release tag is a bare vX.Y.Z on that repo, distinct from its sdk/go/vX.Y.Z module tag.",
+  "$comment": "One entry per provider. versions lists every version this site serves, latest last -- the committed list, not a live release-list query per repo per build (UBI-240: a build that queries live lists produces different output depending on when it runs). Adding a version is a one-line change, visible in review. repo is the real GitHub repo the docs release lives on; each version's own release tag is a bare vX.Y.Z on that repo, distinct from its sdk/go/vX.Y.Z module tag. goModule is the real base Go import path recorded from that repo's own sdk/go/go.mod (module line, verbatim) -- most providers publish sdk/go/go.mod as github.com/ubiquex/ubx-sdk-<provider>/sdk/go and can omit this field entirely (lib/examples.ts defaults to that shape), but a provider whose own go.mod declares a real major-version suffix (confirmed directly, not assumed uniform: ubx-sdk-aws's own sdk/go/go.mod is .../sdk/go/v2) must record it here so generated example imports stay correct.",
   "providers": {
     "kubernetes": {
       "name": "Kubernetes",
@@ -7,6 +7,14 @@
       "repo": "ubiquex/ubx-sdk-kubernetes",
       "tier": "official",
       "versions": ["1.0.0", "1.1.0"]
+    },
+    "aws": {
+      "name": "AWS",
+      "description": "Every real AWS resource and data source CloudFormation and the AWS SDKs expose, in one place.",
+      "repo": "ubiquex/ubx-sdk-aws",
+      "tier": "official",
+      "goModule": "github.com/ubiquex/ubx-sdk-aws/sdk/go/v2",
+      "versions": ["2.1.0"]
     }
   }
 }

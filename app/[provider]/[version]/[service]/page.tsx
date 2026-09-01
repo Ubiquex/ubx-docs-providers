@@ -1,18 +1,28 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
-import { getProvider, listCachedVersions, listResources, listServiceGroups, versionExists } from "@/lib/docs";
+import {
+  getProvider,
+  listCachedVersions,
+  listProviders,
+  listResources,
+  listServiceGroups,
+  versionExists,
+} from "@/lib/docs";
 
 // UBI-240 slice 2: the per-service listing page slice 1 deliberately
 // left unbuilt (ServiceGroupCard's own doc comment named it directly --
 // linking to this before it existed would have 404'd for every group).
 // Real now: every service group at every cached version gets a real
-// page here, listing its own real resources and data sources.
+// page here, listing its own real resources and data sources. Slice 3:
+// loops every configured provider, not just kubernetes.
 export function generateStaticParams() {
   const params: { provider: string; version: string; service: string }[] = [];
-  for (const version of listCachedVersions("kubernetes")) {
-    for (const g of listServiceGroups("kubernetes", version)) {
-      params.push({ provider: "kubernetes", version, service: g.service });
+  for (const provider of Object.keys(listProviders())) {
+    for (const version of listCachedVersions(provider)) {
+      for (const g of listServiceGroups(provider, version)) {
+        params.push({ provider, version, service: g.service });
+      }
     }
   }
   return params;
