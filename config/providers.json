@@ -1,0 +1,12 @@
+{
+  "$comment": "One entry per provider. versions lists every version this site serves, latest last -- the committed list, not a live release-list query per repo per build (UBI-240: a build that queries live lists produces different output depending on when it runs). Adding a version is a one-line change, visible in review. repo is the real GitHub repo the docs release lives on; each version's own release tag is a bare vX.Y.Z on that repo, distinct from its sdk/go/vX.Y.Z module tag.",
+  "providers": {
+    "kubernetes": {
+      "name": "Kubernetes",
+      "description": "Deployments, services, config, and everything else a real cluster runs.",
+      "repo": "ubiquex/ubx-sdk-kubernetes",
+      "tier": "official",
+      "versions": ["1.1.0"]
+    }
+  }
+}

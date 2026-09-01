@@ -1,0 +1,38 @@
+name: ci
+
+# Matches the same real build check every sibling repo in this org
+# already has. Runs the real fetch-docs.mjs (a real network call
+# against every configured provider's own GitHub Release, no mock) as
+# part of `npm run build`'s own prebuild step -- a checksum failure or
+# a missing release asset fails this the same way it would fail a real
+# deploy, not silently.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+          cache: "npm"
+
+      - name: npm ci
+        run: npm ci
+
+      - name: lint
+        run: npm run lint
+
+      - name: build
+        run: npm run build
