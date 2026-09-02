@@ -125,9 +125,55 @@ export type ResourceSummary = {
   category: string;
 };
 
+// A real, found-live bug (UBI-240, reported as "wrong resource and
+// data source counts" on the provider home's own service-group cards,
+// investigated before fixing): categories.json's own override coverage
+// is routinely PARTIAL within one real service -- some of a service's
+// own wire types carry a real override, others don't, falling through
+// to titleCase(service) instead. When that fallback's naive casing
+// doesn't match the override's real casing (confirmed live: AWS's own
+// "uxc" service has one wire type overridden to "UXC" and two more
+// with no override at all, falling to "Uxc"; Google's "bigquery" is
+// "BigQuery" for ten wire types and "Bigquery" for one uncovered data
+// source; Datadog's "rum" is "RUM" everywhere except one field-less
+// case), the SAME real service splits across two label strings that
+// differ only by casing -- two near-identical cards, each showing a
+// fragment of that service's real total, which is exactly what read
+// as "wrong counts" (the grand total across both cards is still
+// correct, only the per-card split is wrong).
+//
+// Fixed at the resolution step, not by grouping later: build the set
+// of every REAL override label a service's own wire types actually
+// carry, keyed case-insensitively, and prefer that real casing over a
+// fresh titleCase(service) fallback whenever they'd otherwise collide
+// case-insensitively. Deliberately narrow -- a service that
+// legitimately splits across genuinely DIFFERENT labels (AWS's own
+// ec2: "Amazon EC2", "Amazon VPC", "AWS Transit Gateway", "AWS
+// Verified Access", confirmed live, all real and intentional) is left
+// alone, since none of those case-insensitively match the bare
+// fallback "Ec2" -- this only merges a fallback back into a label the
+// same service already uses for real, never merges two real,
+// independently-chosen labels into each other.
 export function listResources(providerKey: string, version: string): ResourceSummary[] {
   const index = loadSchemaIndex(providerKey, version);
   const categories = loadCategories(providerKey, version);
+
+  // Every real override label a service's own wire types carry,
+  // case-insensitively keyed -- see this function's own doc comment
+  // above for why this exists and exactly how narrow it is.
+  const realLabelsByService = new Map<string, Map<string, string>>();
+  for (const [wireType, entry] of Object.entries(index)) {
+    const categoryKey = wireType.startsWith("data_") ? wireType.slice("data_".length) : wireType;
+    const label = categories.overrides[categoryKey]?.label;
+    if (!label) continue;
+    let byLower = realLabelsByService.get(entry.service);
+    if (!byLower) {
+      byLower = new Map();
+      realLabelsByService.set(entry.service, byLower);
+    }
+    if (!byLower.has(label.toLowerCase())) byLower.set(label.toLowerCase(), label);
+  }
+
   return Object.entries(index).map(([wireType, entry]) => {
     // categories.json's own overrides are keyed WITHOUT the "data_"
     // prefix even for a data source -- confirmed directly against the
@@ -135,13 +181,17 @@ export function listResources(providerKey: string, version: string): ResourceSum
     // silently fell through to the plain title-cased service name
     // until this was checked).
     const categoryKey = wireType.startsWith("data_") ? wireType.slice("data_".length) : wireType;
+    const override = categories.overrides[categoryKey]?.label;
+    const fallback = titleCase(entry.service);
+    const category =
+      override ?? realLabelsByService.get(entry.service)?.get(fallback.toLowerCase()) ?? fallback;
     return {
       wireType,
       service: entry.service,
       localName: entry.localName,
       isDataSource: wireType.startsWith("data_"),
       dottedName: `${entry.service}.${pascalCase(entry.localName)}`,
-      category: categories.overrides[categoryKey]?.label ?? titleCase(entry.service),
+      category,
     };
   });
 }
