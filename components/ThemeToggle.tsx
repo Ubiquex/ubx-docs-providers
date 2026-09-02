@@ -6,8 +6,7 @@ import { useSyncExternalStore } from "react";
 // see the inline script in app/layout.tsx for how it's applied before
 // paint) and "system" (no [data-theme] attribute at all, the original
 // prefers-color-scheme-only behavior this toggle adds onto rather than
-// replaces). Cycles system -> light -> dark -> system so a reader can
-// always get back to "just follow the OS" without a separate control.
+// replaces).
 type ThemeChoice = "system" | "light" | "dark";
 
 const STORAGE_KEY = "ubx-docs-theme";
@@ -18,18 +17,6 @@ function applyTheme(choice: ThemeChoice) {
   else root.setAttribute("data-theme", choice);
 }
 
-const NEXT: Record<ThemeChoice, ThemeChoice> = {
-  system: "light",
-  light: "dark",
-  dark: "system",
-};
-
-const LABEL: Record<ThemeChoice, string> = {
-  system: "System",
-  light: "Light",
-  dark: "Dark",
-};
-
 // localStorage is real external state, not React state -- read through
 // useSyncExternalStore rather than mirrored into a useState via a
 // useEffect (the latter renders "system" first, then immediately
@@ -39,8 +26,9 @@ const LABEL: Record<ThemeChoice, string> = {
 // for a first client render before the "ubx-theme-change" listener
 // below has run once -- the inline head script in app/layout.tsx has
 // already set the real data-theme attribute on the DOM by then, so the
-// page never actually shows the wrong theme, only this button's own
-// label briefly lags by one render on a genuinely fresh mount.
+// page never actually shows the wrong theme, only this control's own
+// active-state highlight briefly lags by one render on a genuinely
+// fresh mount.
 function subscribe(callback: () => void) {
   window.addEventListener("storage", callback);
   window.addEventListener("ubx-theme-change", callback);
@@ -59,11 +47,56 @@ function getServerSnapshot(): ThemeChoice {
   return "system";
 }
 
+function SystemIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+      <rect x="1.5" y="2.5" width="13" height="8.5" rx="1" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M5.5 14h5M8 11v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.3" />
+      <path
+        d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.7 3.3l-1 1M4.3 11.7l-1 1M12.7 12.7l-1-1M4.3 4.3l-1-1"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" aria-hidden="true">
+      <path
+        d="M13.5 9.5A5.8 5.8 0 0 1 6.5 2.5 5.8 5.8 0 1 0 13.5 9.5Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const OPTIONS: { choice: ThemeChoice; label: string; Icon: () => React.ReactElement }[] = [
+  { choice: "system", label: "System", Icon: SystemIcon },
+  { choice: "light", label: "Light", Icon: SunIcon },
+  { choice: "dark", label: "Dark", Icon: MoonIcon },
+];
+
+// A three-way segmented control, one icon per real state, all three
+// always visible -- replaces the earlier single cycling button (whose
+// current state was legible only from its text label, distinct icons
+// were the whole point of this pass).
 export function ThemeToggle() {
   const choice = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
-  function cycle() {
-    const next = NEXT[choice];
+  function choose(next: ThemeChoice) {
     applyTheme(next);
     if (next === "system") window.localStorage.removeItem(STORAGE_KEY);
     else window.localStorage.setItem(STORAGE_KEY, next);
@@ -71,13 +104,28 @@ export function ThemeToggle() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={cycle}
-      className="rounded-md border border-border px-2.5 py-1.5 text-xs font-medium text-foreground-muted hover:border-primary hover:text-primary"
-      aria-label={`Theme: ${LABEL[choice]}. Click to change.`}
-    >
-      {LABEL[choice]}
-    </button>
+    <div role="radiogroup" aria-label="Theme" className="inline-flex rounded-md border border-border p-0.5">
+      {OPTIONS.map(({ choice: c, label, Icon }) => {
+        const active = c === choice;
+        return (
+          <button
+            key={c}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={label}
+            title={label}
+            onClick={() => choose(c)}
+            className={
+              active
+                ? "flex h-6 w-6 items-center justify-center rounded bg-primary text-primary-foreground"
+                : "flex h-6 w-6 items-center justify-center rounded text-foreground-muted hover:text-primary"
+            }
+          >
+            <Icon />
+          </button>
+        );
+      })}
+    </div>
   );
 }
