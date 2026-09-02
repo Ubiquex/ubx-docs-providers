@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
 import { getDataSource, getProvider, listCachedVersions, listProviders, listResources } from "@/lib/docs";
-import { dataSourceExample } from "@/lib/examples";
+import { exampleFor } from "@/lib/examples";
 
 // Data sources live under their own /data/ segment, matching the real
 // generated package layout every SDK language already uses
@@ -40,7 +40,6 @@ export default async function DataSourcePage({
   if (!detail) notFound();
 
   const siblings = listResources(provider, version).filter((r) => r.service === service);
-  const pascal = detail.dottedName.split(".")[1];
 
   return (
     <>
@@ -53,7 +52,7 @@ export default async function DataSourcePage({
         resource={resource}
         detail={detail}
         siblings={siblings}
-        examples={dataSourceExample(provider, cfg.goModule, service, resource, pascal)}
+        examples={exampleFor(provider, version, detail.wireType)}
       />
     </>
   );
