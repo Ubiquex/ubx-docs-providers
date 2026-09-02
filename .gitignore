@@ -44,6 +44,9 @@ yarn-error.log*
 # .docs-cache, never committed
 /public/search-index.json
 
+# build-sidebar-index.mjs' own output -- same real convention
+/public/sidebar/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
