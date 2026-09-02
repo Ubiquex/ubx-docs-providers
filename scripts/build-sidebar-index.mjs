@@ -52,24 +52,44 @@ function listCachedVersions(providerKey) {
     .map((e) => e.name);
 }
 
-// Same real, found-live fix as lib/docs.ts's own listResources carried
-// (UBI-240): categories.json's own override coverage is routinely
-// partial within one real service -- some of a service's own wire
-// types carry a real override, others don't and fall through to
-// titleCase(service), and when that fallback's naive casing doesn't
-// match the override's real casing, one real service splits across
-// two label strings differing only by casing (AWS's own "uxc" ->
-// "UXC" for one wire type, "Uxc" for two uncovered ones). Duplicated
-// here rather than imported from lib/docs.ts, matching this codebase's
-// own established convention (build-search-index.mjs and
-// build-examples.mjs both already duplicate their own small slice of
-// shared pure logic rather than importing the TS-only lib/ modules
-// into a plain .mjs script).
+// UBI-245's own real, found-live cause, generalized after checking
+// data-source-only sidebar groups directly against the schema
+// (real, confirmed live, not assumed): categories.json's override
+// coverage is not just occasionally partial, it is systematically
+// asymmetric between resources and data sources -- real, measured
+// coverage across all seven providers: resources 90-100% covered,
+// data sources as low as 1.1% (AWS) and 5.1% (Google). A service whose
+// resources are fully covered under one real product label but whose
+// data sources have NO override at all splits into two groups: the
+// real label (all resources) and a naive titleCase(service) fallback
+// (all data sources) -- confirmed live, e.g. AWS's real apigateway
+// service: "Amazon API Gateway" (37 resources, 0 data sources shown)
+// and a separate "Apigateway" (0 resources, 28 data sources) -- the
+// SAME real service, not two. This is a stronger case than a same-
+// word casing mismatch (AWS's own "uxc" -> "UXC" vs "Uxc"), the
+// original, narrower version of this fix only caught -- "Apigateway"
+// and "Amazon API Gateway" don't collide case-insensitively at all.
+//
+// Fixed generally: if every wire type of a service that DOES carry a
+// real override agrees on exactly ONE distinct label, an uncovered
+// wire type of that SAME service adopts that one real label too,
+// regardless of whether its own naive fallback happens to resemble it.
+// Deliberately still narrow where the schema itself doesn't agree
+// which label a service belongs to -- AWS's own ec2 legitimately
+// carries four distinct real labels across its own covered wire types
+// ("Amazon EC2", "Amazon VPC", "AWS Transit Gateway", "AWS Verified
+// Access"), confirmed live; an uncovered ec2 wire type still falls
+// back to the honest "Ec2" rather than guessing which of the four it
+// belongs to. Duplicated here rather than imported from lib/docs.ts,
+// matching this codebase's own established convention (build-search-
+// index.mjs and build-examples.mjs both already duplicate their own
+// small slice of shared pure logic rather than importing the TS-only
+// lib/ modules into a plain .mjs script).
 function resolveCategory(service, override, realLabelsByService) {
   if (override) return override;
-  const fallback = titleCase(service);
-  const real = realLabelsByService.get(service)?.get(fallback.toLowerCase());
-  return real ?? fallback;
+  const real = realLabelsByService.get(service);
+  if (real && real.size === 1) return [...real.values()][0];
+  return titleCase(service);
 }
 
 function buildTreeFor(providerKey, version) {
