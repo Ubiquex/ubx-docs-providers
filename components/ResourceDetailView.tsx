@@ -10,6 +10,21 @@ function siblingHref(provider: string, version: string, sibling: ResourceSummary
   return `${base}/${sibling.service}/${sibling.localName}`;
 }
 
+// Mintlify's own docs.json nests every service's sidebar entries under
+// two subgroups, "Resources" and "Data sources" (confirmed directly,
+// not guessed -- ubiquex-docs/docs.json carries that exact pair,
+// capitalized exactly this way, at every one of its own per-service
+// groups). Matched here rather than the single flat list this component
+// used to render.
+function siblingGroups(siblings: ResourceSummary[]): { label: string; items: ResourceSummary[] }[] {
+  const resources = siblings.filter((r) => !r.isDataSource);
+  const dataSources = siblings.filter((r) => r.isDataSource);
+  const groups: { label: string; items: ResourceSummary[] }[] = [];
+  if (resources.length) groups.push({ label: "Resources", items: resources });
+  if (dataSources.length) groups.push({ label: "Data sources", items: dataSources });
+  return groups;
+}
+
 export function ResourceDetailView({
   provider,
   version,
@@ -36,26 +51,32 @@ export function ResourceDetailView({
           <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
             {service}
           </h2>
-          <ul className="mt-2 space-y-1">
-            {siblings.map((r) => {
-              const current = r.localName === resource && r.isDataSource === detail.isDataSource;
-              return (
-                <li key={`${r.isDataSource ? "data" : "resource"}-${r.wireType}`}>
-                  <Link
-                    href={siblingHref(provider, version, r)}
-                    className={
-                      current
-                        ? "block rounded px-2 py-1 text-sm font-medium text-primary"
-                        : "block rounded px-2 py-1 text-sm text-foreground-muted hover:text-primary"
-                    }
-                  >
-                    {r.dottedName.split(".")[1]}
-                    {r.isDataSource && <span className="text-foreground-muted"> (data)</span>}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
+          {siblingGroups(siblings).map((group) => (
+            <div key={group.label} className="mt-3 first:mt-2">
+              <h3 className="px-2 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted/70">
+                {group.label}
+              </h3>
+              <ul className="mt-1 space-y-1">
+                {group.items.map((r) => {
+                  const current = r.localName === resource && r.isDataSource === detail.isDataSource;
+                  return (
+                    <li key={`${r.isDataSource ? "data" : "resource"}-${r.wireType}`}>
+                      <Link
+                        href={siblingHref(provider, version, r)}
+                        className={
+                          current
+                            ? "block rounded px-2 py-1 text-sm font-medium text-primary"
+                            : "block rounded px-2 py-1 text-sm text-foreground-muted hover:text-primary"
+                        }
+                      >
+                        {r.dottedName.split(".")[1]}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         <div className="min-w-0">
