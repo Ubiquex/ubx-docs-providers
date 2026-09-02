@@ -6,8 +6,9 @@
     "fetch-docs": "node scripts/fetch-docs.mjs",
     "build-examples": "node scripts/build-examples.mjs",
     "build-search-index": "node scripts/build-search-index.mjs",
-    "dev": "npm run fetch-docs && npm run build-examples && npm run build-search-index && next dev",
-    "prebuild": "npm run fetch-docs && npm run build-examples && npm run build-search-index",
+    "build-sidebar-index": "node scripts/build-sidebar-index.mjs",
+    "dev": "npm run fetch-docs && npm run build-examples && npm run build-search-index && npm run build-sidebar-index && next dev",
+    "prebuild": "npm run fetch-docs && npm run build-examples && npm run build-search-index && npm run build-sidebar-index",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

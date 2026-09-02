@@ -122,85 +122,30 @@ export type ResourceSummary = {
   localName: string;
   isDataSource: boolean;
   dottedName: string; // e.g. "core.Namespace"
-  category: string;
 };
 
-// A real, found-live bug (UBI-240, reported as "wrong resource and
-// data source counts" on the provider home's own service-group cards,
-// investigated before fixing): categories.json's own override coverage
-// is routinely PARTIAL within one real service -- some of a service's
-// own wire types carry a real override, others don't, falling through
-// to titleCase(service) instead. When that fallback's naive casing
-// doesn't match the override's real casing (confirmed live: AWS's own
-// "uxc" service has one wire type overridden to "UXC" and two more
-// with no override at all, falling to "Uxc"; Google's "bigquery" is
-// "BigQuery" for ten wire types and "Bigquery" for one uncovered data
-// source; Datadog's "rum" is "RUM" everywhere except one field-less
-// case), the SAME real service splits across two label strings that
-// differ only by casing -- two near-identical cards, each showing a
-// fragment of that service's real total, which is exactly what read
-// as "wrong counts" (the grand total across both cards is still
-// correct, only the per-card split is wrong).
-//
-// Fixed at the resolution step, not by grouping later: build the set
-// of every REAL override label a service's own wire types actually
-// carry, keyed case-insensitively, and prefer that real casing over a
-// fresh titleCase(service) fallback whenever they'd otherwise collide
-// case-insensitively. Deliberately narrow -- a service that
-// legitimately splits across genuinely DIFFERENT labels (AWS's own
-// ec2: "Amazon EC2", "Amazon VPC", "AWS Transit Gateway", "AWS
-// Verified Access", confirmed live, all real and intentional) is left
-// alone, since none of those case-insensitively match the bare
-// fallback "Ec2" -- this only merges a fallback back into a label the
-// same service already uses for real, never merges two real,
-// independently-chosen labels into each other.
+// category (a categories.json-resolved human label, e.g. "Amazon
+// EC2") used to live on this type -- UBI-240's own "drop the service
+// group cards" pass removed the provider home's card grid and the
+// resource detail page's own single-service sidebar in favor of one
+// shared ProviderSidebar, which fetches its own real, prebuilt tree
+// (public/sidebar/<provider>/<version>.json, scripts/build-sidebar-
+// index.mjs) instead of reading category off a ResourceSummary at
+// request time. That build script carries its own copy of the real
+// label-resolution fix (categories.json's own partial coverage within
+// one service, see that script's own doc comment) -- this module has
+// no remaining real reader for `category`, so it's gone rather than
+// kept as dead weight two implementations could quietly drift apart
+// on.
 export function listResources(providerKey: string, version: string): ResourceSummary[] {
   const index = loadSchemaIndex(providerKey, version);
-  const categories = loadCategories(providerKey, version);
-
-  // Every real override label a service's own wire types carry,
-  // case-insensitively keyed -- see this function's own doc comment
-  // above for why this exists and exactly how narrow it is.
-  const realLabelsByService = new Map<string, Map<string, string>>();
-  for (const [wireType, entry] of Object.entries(index)) {
-    const categoryKey = wireType.startsWith("data_") ? wireType.slice("data_".length) : wireType;
-    const label = categories.overrides[categoryKey]?.label;
-    if (!label) continue;
-    let byLower = realLabelsByService.get(entry.service);
-    if (!byLower) {
-      byLower = new Map();
-      realLabelsByService.set(entry.service, byLower);
-    }
-    if (!byLower.has(label.toLowerCase())) byLower.set(label.toLowerCase(), label);
-  }
-
-  return Object.entries(index).map(([wireType, entry]) => {
-    // categories.json's own overrides are keyed WITHOUT the "data_"
-    // prefix even for a data source -- confirmed directly against the
-    // real file, not assumed (a data source's own category lookup
-    // silently fell through to the plain title-cased service name
-    // until this was checked).
-    const categoryKey = wireType.startsWith("data_") ? wireType.slice("data_".length) : wireType;
-    const override = categories.overrides[categoryKey]?.label;
-    const fallback = titleCase(entry.service);
-    const category =
-      override ?? realLabelsByService.get(entry.service)?.get(fallback.toLowerCase()) ?? fallback;
-    return {
-      wireType,
-      service: entry.service,
-      localName: entry.localName,
-      isDataSource: wireType.startsWith("data_"),
-      dottedName: `${entry.service}.${pascalCase(entry.localName)}`,
-      category,
-    };
-  });
-}
-
-function titleCase(s: string): string {
-  return s
-    .split(/[_-]/)
-    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
-    .join(" ");
+  return Object.entries(index).map(([wireType, entry]) => ({
+    wireType,
+    service: entry.service,
+    localName: entry.localName,
+    isDataSource: wireType.startsWith("data_"),
+    dottedName: `${entry.service}.${pascalCase(entry.localName)}`,
+  }));
 }
 
 export type ResourceDetail = ResourceSummary & {
@@ -315,100 +260,6 @@ function loadIntros(providerKey: string, version: string): Record<string, string
     introsCache.set(key, intros!);
   }
   return intros!;
-}
-
-type Categories = { overrides: Record<string, { label: string }> };
-
-const categoriesCache: Map<string, Categories> = new Map();
-
-function loadCategories(providerKey: string, version: string): Categories {
-  const key = `${providerKey}@${version}`;
-  let categories = categoriesCache.get(key);
-  if (!categories) {
-    const p = join(versionDir(providerKey, version), "artifacts", "categories.json");
-    categories = JSON.parse(readFileSync(p, "utf8"));
-    categoriesCache.set(key, categories!);
-  }
-  return categories!;
-}
-
-// Matches ResourceDetailView's own siblingHref exactly (a resource vs.
-// data source path differs only by the /data/ segment) -- kept as its
-// own tiny copy here rather than importing a component-layer helper
-// into lib/, the wrong direction for this codebase's own layering.
-function siblingHref(providerKey: string, version: string, r: ResourceSummary): string {
-  const base = r.isDataSource ? `/${providerKey}/${version}/data` : `/${providerKey}/${version}`;
-  return `${base}/${r.service}/${r.localName}`;
-}
-
-export type ServiceGroup = {
-  // Every real service directory this card's own label covers -- a
-  // real, found-live bug (not UBI-242's AWS-only CFN/Smithy split,
-  // ruled out directly: Datadog and GitHub show the identical shape
-  // with no CFN/Smithy involvement at all): categories.json routinely,
-  // legitimately maps MULTIPLE distinct real service directories to
-  // ONE human label on purpose (confirmed against the real corpus --
-  // AWS's own "AWS Billing and Cost Management" spans six real,
-  // separate services: billing, billingconductor, bcm,
-  // bcmdataexports, bcmpricingcalculator, invoicing; "Amazon API
-  // Gateway" genuinely spans apigateway (v1, REST) and apigatewayv2
-  // (v2, HTTP/WebSocket) -- both real AWS products, correctly grouped
-  // under one name). Grouping by `service` (this card's own previous
-  // key) rendered one card per real service directory, so a
-  // multi-service label rendered as that many identical-looking cards.
-  // Grouping by `label` here fixes it at the real, general cause --
-  // present in every provider whose own categories.json curators did
-  // this (confirmed live: AWS, Azure, Google, Datadog, GitHub all
-  // have real duplicate-label cases; Kubernetes and DigitalOcean
-  // happen to have none, which is why this was easy to miss testing
-  // against Kubernetes alone).
-  services: string[];
-  label: string;
-  resourceCount: number;
-  dataSourceCount: number;
-  // firstHref is the real page a service group's own card now links
-  // straight to -- UBI-240's own "drop the per-family index" pass: the
-  // group used to link to a plain listing page (app/[provider]/
-  // [version]/[service]/page.tsx, since removed) whose only real job
-  // was picking one of these links for the reader. Computed here, the
-  // one place a service's own resources are already being grouped, not
-  // re-derived at each of the two real call sites (ServiceGroupCard's
-  // two render paths, filtered and sectioned).
-  firstHref: string;
-};
-
-export function listServiceGroups(providerKey: string, version: string): ServiceGroup[] {
-  const resources = listResources(providerKey, version);
-  const byLabel = new Map<string, ResourceSummary[]>();
-  for (const r of resources) {
-    const existing = byLabel.get(r.category);
-    if (existing) existing.push(r);
-    else byLabel.set(r.category, [r]);
-  }
-
-  const groups: ServiceGroup[] = [];
-  for (const [label, items] of byLabel) {
-    // dottedName (service.PascalLocalName) rather than bare localName --
-    // a label spanning multiple real services should pick its "first"
-    // resource in service order first, not interleave every
-    // constituent service's own resources purely alphabetically by
-    // local name, which would pick unpredictably across services.
-    const resourceItems = items.filter((r) => !r.isDataSource).sort((a, b) => a.dottedName.localeCompare(b.dottedName));
-    const dataSourceItems = items.filter((r) => r.isDataSource).sort((a, b) => a.dottedName.localeCompare(b.dottedName));
-    // Resources before data sources, matching the sidebar's own real
-    // Resources-before-Data-sources grouping (ResourceDetailView) --
-    // consistent rather than an independent, possibly-diverging order.
-    const first = resourceItems[0] ?? dataSourceItems[0];
-    const services = [...new Set(items.map((r) => r.service))].sort();
-    groups.push({
-      services,
-      label,
-      resourceCount: resourceItems.length,
-      dataSourceCount: dataSourceItems.length,
-      firstHref: siblingHref(providerKey, version, first),
-    });
-  }
-  return groups.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 // pickStarterResource chooses the real resource the provider home

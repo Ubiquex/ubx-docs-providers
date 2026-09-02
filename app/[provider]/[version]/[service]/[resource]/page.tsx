@@ -36,8 +36,6 @@ export default async function ResourcePage({
   const detail = getResource(provider, version, service, resource);
   if (!detail) notFound();
 
-  const siblings = listResources(provider, version).filter((r) => r.service === service);
-
   return (
     <>
       <Header />
@@ -48,7 +46,6 @@ export default async function ResourcePage({
         service={service}
         resource={resource}
         detail={detail}
-        siblings={siblings}
         examples={exampleFor(provider, version, detail.wireType)}
       />
     </>
