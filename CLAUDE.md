@@ -191,6 +191,79 @@ the release actually ships.
   Next's own output file tracing. Build still succeeds; named here for
   whoever next touches deployment sizing, not silently ignored.
 
+## Slice 4 (UBI-240): the remaining five providers, all seven in
+
+Azure, Google, Datadog, GitHub, DigitalOcean brought in, same docs
+artifact pattern as AWS (pinned snapshot, not a live fetch, none of the
+five have a lightweight live single-URL schema either). Real committed
+versions confirmed live against PyPI/npm before use, not assumed from
+`package.json` alone: `azure` 1.2.0, `google` 1.3.0, `datadog` 1.3.0,
+`github` 1.2.0, `digitalocean` 1.0.0.
+
+**Two real, small bugs caught before they shipped:**
+- `ubiquex-docs`'s own `artifacts/` directory names Google's provider
+  `gcp`, not `google` -- every other provider's artifacts directory
+  matches its `ubx-sdk-<provider>` repo name exactly; confirmed directly
+  rather than assumed uniform, fixed in `ubx-sdk-google`'s own
+  `publish.yml` before its PR was opened for review.
+- `digitalocean` genuinely has no `exclusions.json` in `ubiquex-docs`
+  yet (every other provider does). The docs site never reads that file
+  today, so its absence isn't a reason to fail a real release --
+  `publish.yml`'s own packaging step treats it as optional, required
+  files still hard-fail.
+
+**A real, separate bug, filed as UBI-243, not fixed here:** Azure's own
+docs artifact is 3.9GB extracted, roughly 20x AWS's. Not because Azure
+has more real resources (2718 wire types, fewer than AWS's 6241) -- 51
+of 2719 schema files (1.9%), every one a `network_*` resource, are
+pathologically large (up to 319MB each) from self-referential ARM
+networking types (`Subnet` → `NetworkInterface` → `IPConfiguration` →
+`PrivateLinkService` → back to `NetworkInterface`-shaped fields)
+inline-expanding without cycle detection, capped at a suspiciously round
+51 levels of nesting. Those 51 files alone are 99% of the total 3.9GB;
+the other 2668 files have a normal 5KB median, matching every other
+provider. Confirmed live that this doesn't hurt the docs site itself:
+`JSON.parse` on the worst file is well under half a second, and the
+deep `Object` nesting never crosses into a client component boundary
+(only shallow, already-computed strings do), so the built page output
+for these resources stays small and serves in milliseconds -- verified
+directly, not assumed. The real cost is disk, not build time or page
+weight, and it belongs in `ubx-provider-dynamic`'s or
+`sdk/codegen/ir`'s own `$ref`-flattening logic, not this site.
+
+**All seven providers, real numbers, answering the question this slice
+was for:**
+
+| | extracted | resources | data sources |
+|---|---|---|---|
+| kubernetes | 70MB | 92 | 75 |
+| aws | 479MB | 1715 | 4526 |
+| azure | 3.9GB | 1106 | 1612 |
+| google | 153MB | 1560 | 415 |
+| datadog | 16MB | 177 | 445 |
+| github | 11MB | 91 | 249 |
+| digitalocean | 8.8MB | 59 | 136 |
+
+Combined `.docs-cache`: **4.6GB**. Real, measured `next build` wall
+time for all seven together: **~53.5s** -- not meaningfully worse than
+half that for two providers (~28.5s in slice 3), since build time
+tracks page count and per-file parse cost, not raw disk size, and
+Azure's own bloat lives in 51 files that get read once each, not
+re-parsed per page. Real page count: ~13,574 statically generated pages
+(1214 service-group pages, 4892 resource pages, 7458 data-source
+pages, 8 provider-home pages, plus landing). Real `.next` build output:
+**2.1GB**. Real client-side search index: **2.9MB**, 12,258 entries.
+
+**What this answers**: the static-render approach holds through all
+seven providers as currently configured -- build time stays well under
+a minute, and Azure's real disk bloat (UBI-243) does not translate into
+build-time or served-page-weight cost, confirmed live rather than
+assumed from the extracted size alone. The number that would actually
+threaten this approach is `.docs-cache` continuing to grow per real
+schema-generation bug rather than real provider scale -- worth watching
+if UBI-243's own root cause turns out not to be unique to Azure
+networking.
+
 ## Git rules
 
 PR-only, never self-merge, matching every repo in this org except

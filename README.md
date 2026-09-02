@@ -10,17 +10,18 @@ Versioned per SDK release, like Terraform's own provider docs: a
 reader on `ubx-sdk-aws` 2.1.0 sees that version's pages, sealed, never
 edited in place. Fixing a typo means cutting a new SDK version.
 
-## Slices 1 through 3 (UBI-240)
+## Slices 1 through 4 (UBI-240)
 
-Two real providers now, Kubernetes and AWS. Every real resource and
-data source on both, real search, per-service listing pages, a working
-version selector, and a filterable, alphabetically-sectioned service-
-group browser that scales from Kubernetes's 22 groups to AWS's real
-503. AWS's own real scale surfaced a genuine, separate upstream bug
-(51 services split into two groups by inconsistent CFN/Smithy naming,
-filed as UBI-242, not fixed here) and a real artifact size (~479MB
-extracted, ~14MB compressed) well past the original estimate. Azure and
-Google remain untouched. See `CLAUDE.md` for the full account, including
+All seven providers are in: Kubernetes, AWS, Azure, Google Cloud,
+Datadog, GitHub, DigitalOcean. Every real resource and data source on
+each, real search (12,258 entries), per-service listing pages, a
+working version selector, and a filterable, alphabetically-sectioned
+service-group browser that scales from Kubernetes's 22 groups to AWS's
+real 503. Combined extracted docs artifacts: 4.6GB (Azure alone is
+3.9GB of that, a real, separate upstream bug -- UBI-243 -- not a
+reflection of Azure having more real resources). Real, measured full
+build across all seven: ~53.5s, ~13,574 statically generated pages,
+2.1GB build output. See `CLAUDE.md` for the full account, including
 every real bug found and fixed by testing rather than assuming.
 
 ## Development
