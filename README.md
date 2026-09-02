@@ -38,6 +38,12 @@ real GitHub Release). Set `UBX_DOCS_MIRROR=/path/to/local/docs` to
 point at a local, trusted copy instead of the network, matching
 `ubiquex`'s own `UBX_SCHEMA_MIRROR` convention.
 
+Requires real `gofmt` (ships with any Go toolchain) and real `deno` on
+`PATH` -- `scripts/build-examples.mjs` (also part of the prebuild step)
+verifies every generated Go and TypeScript example against these real
+tools, the same real-toolchain discipline ubiquex-docs' own generator
+uses, not just visual plausibility.
+
 ## Adding a version
 
 Add it to the relevant provider's own `versions` array in

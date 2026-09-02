@@ -13,7 +13,7 @@ import {
   pickStarterResource,
   versionExists,
 } from "@/lib/docs";
-import { starterExample } from "@/lib/examples";
+import { exampleFor } from "@/lib/examples";
 
 export function generateStaticParams() {
   return Object.keys(listProviders()).flatMap((provider) =>
@@ -33,11 +33,7 @@ export default async function ProviderHomePage({
   const manifest = getManifest(provider, version);
   const groups = listServiceGroups(provider, version);
   const starter = pickStarterResource(provider, version);
-  const pascal = starter?.dottedName.split(".")[1];
-  const starterExamples =
-    starter && pascal
-      ? starterExample(provider, cfg.goModule, starter.service, starter.localName, pascal)
-      : null;
+  const starterExamples = starter ? exampleFor(provider, version, starter.wireType) : null;
 
   return (
     <>

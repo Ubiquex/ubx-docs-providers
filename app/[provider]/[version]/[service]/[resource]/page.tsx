@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
 import { getProvider, getResource, listCachedVersions, listProviders, listResources } from "@/lib/docs";
-import { resourceExample } from "@/lib/examples";
+import { exampleFor } from "@/lib/examples";
 
 // UBI-240 slice 2: every real resource at every real cached version, not
 // just the one namespace.core page slice 1 proved the mechanism with.
@@ -37,7 +37,6 @@ export default async function ResourcePage({
   if (!detail) notFound();
 
   const siblings = listResources(provider, version).filter((r) => r.service === service);
-  const pascal = detail.dottedName.split(".")[1];
 
   return (
     <>
@@ -50,7 +49,7 @@ export default async function ResourcePage({
         resource={resource}
         detail={detail}
         siblings={siblings}
-        examples={resourceExample(provider, cfg.goModule, service, resource, pascal)}
+        examples={exampleFor(provider, version, detail.wireType)}
       />
     </>
   );
