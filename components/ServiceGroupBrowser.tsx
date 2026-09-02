@@ -19,15 +19,7 @@ function sectionLetter(label: string): string {
 // 22 groups or 300. Filtering shows a flat result grid (sections stop
 // being useful once you're narrowing by name); browsing unfiltered
 // shows the A-Z jump nav and sticky section headers instead.
-export function ServiceGroupBrowser({
-  groups,
-  providerKey,
-  version,
-}: {
-  groups: ServiceGroup[];
-  providerKey: string;
-  version: string;
-}) {
+export function ServiceGroupBrowser({ groups }: { groups: ServiceGroup[] }) {
   const [query, setQuery] = useState("");
 
   const sorted = useMemo(
@@ -73,12 +65,10 @@ export function ServiceGroupBrowser({
               {filtered.map((g) => (
                 <ServiceGroupCard
                   key={g.service}
-                  providerKey={providerKey}
-                  version={version}
-                  service={g.service}
                   label={g.label}
                   resourceCount={g.resourceCount}
                   dataSourceCount={g.dataSourceCount}
+                  firstHref={g.firstHref}
                 />
               ))}
             </div>
@@ -117,12 +107,10 @@ export function ServiceGroupBrowser({
                 {letterGroups.map((g) => (
                   <ServiceGroupCard
                     key={g.service}
-                    providerKey={providerKey}
-                    version={version}
-                    service={g.service}
                     label={g.label}
                     resourceCount={g.resourceCount}
                     dataSourceCount={g.dataSourceCount}
+                    firstHref={g.firstHref}
                   />
                 ))}
               </div>

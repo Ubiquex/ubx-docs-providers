@@ -1,27 +1,24 @@
 import Link from "next/link";
 
-// UBI-240 slice 2: a real link now that app/[provider]/[version]/
-// [service]/page.tsx exists -- slice 1's own version of this component
-// deliberately left it inert (its own doc comment explained why: no
-// destination page existed yet, and linking to one that doesn't 404s).
+// UBI-240: links straight to the service's own first real resource or
+// data source page (lib/docs.ts's own listServiceGroups computes
+// firstHref) -- the intermediate per-service listing page this used to
+// link to is gone, its only real job (picking one of these links for
+// the reader) done here at build time instead of behind an extra click.
 export function ServiceGroupCard({
-  providerKey,
-  version,
-  service,
   label,
   resourceCount,
   dataSourceCount,
+  firstHref,
 }: {
-  providerKey: string;
-  version: string;
-  service: string;
   label: string;
   resourceCount: number;
   dataSourceCount: number;
+  firstHref: string;
 }) {
   return (
     <Link
-      href={`/${providerKey}/${version}/${service}`}
+      href={firstHref}
       className="block rounded-lg border border-border bg-surface p-4 transition-colors hover:border-primary"
     >
       <h3 className="font-medium text-primary">{label}</h3>

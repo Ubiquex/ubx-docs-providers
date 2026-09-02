@@ -282,31 +282,57 @@ function loadCategories(providerKey: string, version: string): Categories {
   return categories!;
 }
 
+// Matches ResourceDetailView's own siblingHref exactly (a resource vs.
+// data source path differs only by the /data/ segment) -- kept as its
+// own tiny copy here rather than importing a component-layer helper
+// into lib/, the wrong direction for this codebase's own layering.
+function siblingHref(providerKey: string, version: string, r: ResourceSummary): string {
+  const base = r.isDataSource ? `/${providerKey}/${version}/data` : `/${providerKey}/${version}`;
+  return `${base}/${r.service}/${r.localName}`;
+}
+
 export type ServiceGroup = {
   service: string;
   label: string;
   resourceCount: number;
   dataSourceCount: number;
+  // firstHref is the real page a service group's own card now links
+  // straight to -- UBI-240's own "drop the per-family index" pass: the
+  // group used to link to a plain listing page (app/[provider]/
+  // [version]/[service]/page.tsx, since removed) whose only real job
+  // was picking one of these links for the reader. Computed here, the
+  // one place a service's own resources are already being grouped, not
+  // re-derived at each of the two real call sites (ServiceGroupCard's
+  // two render paths, filtered and sectioned).
+  firstHref: string;
 };
 
 export function listServiceGroups(providerKey: string, version: string): ServiceGroup[] {
   const resources = listResources(providerKey, version);
-  const groups = new Map<string, ServiceGroup>();
+  const byService = new Map<string, ResourceSummary[]>();
   for (const r of resources) {
-    const existing = groups.get(r.service);
-    if (existing) {
-      if (r.isDataSource) existing.dataSourceCount++;
-      else existing.resourceCount++;
-    } else {
-      groups.set(r.service, {
-        service: r.service,
-        label: r.category,
-        resourceCount: r.isDataSource ? 0 : 1,
-        dataSourceCount: r.isDataSource ? 1 : 0,
-      });
-    }
+    const existing = byService.get(r.service);
+    if (existing) existing.push(r);
+    else byService.set(r.service, [r]);
   }
-  return [...groups.values()].sort((a, b) => a.service.localeCompare(b.service));
+
+  const groups: ServiceGroup[] = [];
+  for (const [service, items] of byService) {
+    const resourceItems = items.filter((r) => !r.isDataSource).sort((a, b) => a.localName.localeCompare(b.localName));
+    const dataSourceItems = items.filter((r) => r.isDataSource).sort((a, b) => a.localName.localeCompare(b.localName));
+    // Resources before data sources, matching the sidebar's own real
+    // Resources-before-Data-sources grouping (ResourceDetailView) --
+    // consistent rather than an independent, possibly-diverging order.
+    const first = resourceItems[0] ?? dataSourceItems[0];
+    groups.push({
+      service,
+      label: items[0].category,
+      resourceCount: resourceItems.length,
+      dataSourceCount: dataSourceItems.length,
+      firstHref: siblingHref(providerKey, version, first),
+    });
+  }
+  return groups.sort((a, b) => a.service.localeCompare(b.service));
 }
 
 // pickStarterResource chooses the real resource the provider home

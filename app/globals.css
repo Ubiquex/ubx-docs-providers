@@ -12,7 +12,16 @@
   --color-primary-foreground: #ffffff;
 
   --color-accent-red: #cc2936;
-  --color-accent-yellow: #d4a017;
+  /* #D4A017 (the design pass's own recorded value) is only 2.38:1
+     against this theme's own white background -- real, measured, well
+     under WCAG AA's 4.5:1 floor for normal text. #8A6010 is the same
+     Persian-yellow hue, darkened until it clears AA with real margin
+     (5.58:1 on background, 5.12:1 on surface) -- checked directly, not
+     assumed, since this token is real body text (argument types,
+     CodeBlock's own property-name highlighting), not decoration. Dark
+     mode's own #E8BB4A already clears AA by a wide margin (10.3:1),
+     unchanged. */
+  --color-accent-yellow: #8a6010;
 
   --color-background: #ffffff;
   --color-surface: #f6f5f3;

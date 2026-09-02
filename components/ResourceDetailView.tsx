@@ -46,17 +46,17 @@ export function ResourceDetailView({
 }) {
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr_180px]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[220px_1fr]">
         <nav className="hidden lg:block">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
             {service}
           </h2>
           {siblingGroups(siblings).map((group) => (
             <div key={group.label} className="mt-3 first:mt-2">
-              <h3 className="px-2 text-[11px] font-semibold uppercase tracking-wide text-foreground-muted/70">
+              <h3 className="px-2 text-xs font-bold uppercase tracking-wide text-foreground">
                 {group.label}
               </h3>
-              <ul className="mt-1 space-y-1">
+              <ul className="mt-1 space-y-1 border-l border-border pl-2">
                 {group.items.map((r) => {
                   const current = r.localName === resource && r.isDataSource === detail.isDataSource;
                   return (
@@ -130,7 +130,7 @@ export function ResourceDetailView({
                       <span className="font-mono-tabular text-sm font-medium text-primary">
                         {f.WireName}
                       </span>
-                      <span className="text-xs text-foreground-muted">{formatFieldType(f.Type)}</span>
+                      <span className="text-xs text-accent-yellow">{formatFieldType(f.Type)}</span>
                       {f.Required && <RequiredBadge />}
                     </dt>
                     <dd className="mt-1 text-sm text-foreground">
@@ -142,26 +142,6 @@ export function ResourceDetailView({
             </dl>
           </section>
         </div>
-
-        <nav className="hidden lg:block">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-foreground-muted">
-            On this page
-          </h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            <li>
-              <a href="#arguments" className="text-foreground-muted hover:text-primary">
-                {detail.isDataSource ? "Lookup arguments" : "Arguments"}
-              </a>
-            </li>
-            {detail.fields.map((f) => (
-              <li key={f.WireName} className="pl-3">
-                <a href={`#arg-${f.WireName}`} className="text-foreground-muted hover:text-primary">
-                  {f.WireName}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </div>
     </main>
   );

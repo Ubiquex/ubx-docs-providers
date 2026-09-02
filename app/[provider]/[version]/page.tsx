@@ -75,7 +75,7 @@ export default async function ProviderHomePage({
             Service groups
           </h2>
           <div className="mt-3">
-            <ServiceGroupBrowser groups={groups} providerKey={provider} version={version} />
+            <ServiceGroupBrowser groups={groups} />
           </div>
         </section>
       </main>
