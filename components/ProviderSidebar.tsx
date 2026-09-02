@@ -5,7 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 
 type SidebarItem = { service: string; localName: string; dottedName: string };
 type SidebarGroup = { label: string; resources: SidebarItem[]; dataSources: SidebarItem[] };
-type SidebarData = { groups: SidebarGroup[] };
+type SidebarCoverage = { total: number; categorized: number };
+type SidebarData = { groups: SidebarGroup[]; coverage?: SidebarCoverage };
 
 function itemHref(providerKey: string, version: string, service: string, localName: string, isDataSource: boolean) {
   const base = isDataSource ? `/${providerKey}/${version}/data` : `/${providerKey}/${version}`;
@@ -26,12 +27,23 @@ function itemHref(providerKey: string, version: string, service: string, localNa
 //
 // Fetches the real, prebuilt public/sidebar/<provider>/<version>.json
 // (build-sidebar-index.mjs) once per (provider, version) -- not
-// embedded per-page. AWS alone is 651 groups, 6,241 real resources and
-// data sources; embedding that in each of AWS's own ~12,241 real
-// static pages would multiply a few hundred KB by five figures. Fetched
-// once, the browser caches it across every page of that provider and
-// version, the same real precedent public/search-index.json already
-// established here.
+// embedded per-page. AWS alone is thousands of real resources and data
+// sources across hundreds of groups; embedding that in each of AWS's
+// own ~12,241 real static pages would multiply a few hundred KB by
+// five figures. Fetched once, the browser caches it across every page
+// of that provider and version, the same real precedent
+// public/search-index.json already established here.
+//
+// The coverage line (UBI-245) reads the same tree's own `coverage`
+// field, present on every page this sidebar renders on -- the real
+// product-page statement the design calls for is this line, not a
+// separate page, since the site no longer has a standalone page per
+// service group (dropped when the provider home's card grid became
+// this shared sidebar). A wire type with no real categories.json
+// override renders honestly under "Uncategorized" rather than a
+// guessed label; this line is what tells a reader that group exists
+// and why, rather than leaving them to notice a suspicious label on
+// their own.
 export function ProviderSidebar({
   providerKey,
   version,
@@ -143,8 +155,25 @@ export function ProviderSidebar({
     );
   }
 
+  const coverage = data?.coverage;
+  const uncategorized = coverage ? coverage.total - coverage.categorized : 0;
+
   return (
     <nav className="hidden lg:block">
+      {coverage && (
+        <p className="mb-2 text-xs text-foreground-muted">
+          {coverage.categorized} of {coverage.total} resources and data sources carry a real
+          product category.
+          {uncategorized > 0 && (
+            <>
+              {" "}
+              The remaining {uncategorized} appear under{" "}
+              <span className="font-medium text-foreground">Uncategorized</span>, not guessed
+              into a group.
+            </>
+          )}
+        </p>
+      )}
       <input
         type="search"
         value={query}
