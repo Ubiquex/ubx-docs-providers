@@ -160,7 +160,7 @@ export function ProviderSidebar({
               <button
                 type="button"
                 onClick={() => toggle(group.label)}
-                className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs font-bold uppercase tracking-wide text-foreground hover:text-primary"
+                className="flex w-full items-center gap-1.5 rounded px-2 py-1 text-left text-xs text-foreground hover:text-primary"
               >
                 <span className="inline-block w-3 shrink-0 text-foreground-muted">{open ? "▾" : "▸"}</span>
                 {group.label}
@@ -169,7 +169,7 @@ export function ProviderSidebar({
                 <div className="pl-1">
                   {group.resources.length > 0 && (
                     <div className="mt-1">
-                      <h4 className="px-2 text-[10px] font-semibold uppercase tracking-wide text-foreground-muted/70">
+                      <h4 className="px-2 text-xs font-bold uppercase tracking-wide text-foreground">
                         Resources
                       </h4>
                       {renderItems(group.resources, false)}
@@ -177,7 +177,7 @@ export function ProviderSidebar({
                   )}
                   {group.dataSources.length > 0 && (
                     <div className="mt-2">
-                      <h4 className="px-2 text-[10px] font-semibold uppercase tracking-wide text-foreground-muted/70">
+                      <h4 className="px-2 text-xs font-bold uppercase tracking-wide text-foreground">
                         Data sources
                       </h4>
                       {renderItems(group.dataSources, true)}
