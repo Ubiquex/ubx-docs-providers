@@ -37,7 +37,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL("..", import.meta.url));
@@ -118,12 +118,25 @@ async function downloadAsset(url) {
 // verify.go already parses for the OpenTofu-registry SHA256SUMS
 // convention, reused here since the file shape, not its signer, is what
 // this parsing depends on.
+//
+// Matched by basename, not exact string, on purpose: every
+// ubx-sdk-<provider> publish.yml runs `sha256sum "${{ runner.temp
+// }}/docs.tar.gz"`, and sha256sum echoes back exactly the path it was
+// given -- so the real, live SHA256SUMS content is
+// "<digest>  /home/runner/work/_temp/docs.tar.gz", not a bare
+// "<digest>  docs.tar.gz". Found live (UBI-245): every release this
+// site had fetched before now happened to already be sitting in
+// .docs-cache from earlier in the session, so the real download-and-
+// verify path had never actually run end to end -- the first genuine
+// fresh fetch against a real, CI-produced release hit this immediately.
+// An exact match would make every future real release un-fetchable.
 function expectedSHA256(sumsText, filename) {
   for (const line of sumsText.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     const [digest, name] = trimmed.split(/\s+/);
-    if (name === filename || name === `*${filename}`) return digest;
+    const base = name?.startsWith("*") ? name.slice(1) : name;
+    if (base === filename || basename(base ?? "") === filename) return digest;
   }
   throw new Error(`SHA256SUMS has no entry for ${filename}`);
 }
