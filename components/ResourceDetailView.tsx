@@ -133,7 +133,7 @@ export function ResourceDetailView({
                       <span className="text-xs text-accent-yellow">{formatFieldType(f.Type)}</span>
                       {f.Required && <RequiredBadge />}
                     </dt>
-                    <dd className="mt-1 text-sm text-foreground">
+                    <dd className="mt-1 text-sm leading-relaxed text-foreground">
                       {desc || <span className="text-foreground-muted">No description available.</span>}
                     </dd>
                   </div>

@@ -29,7 +29,9 @@ export function ServiceGroupBrowser({ groups }: { groups: ServiceGroup[] }) {
 
   const q = query.trim().toLowerCase();
   const filtered = q
-    ? sorted.filter((g) => g.label.toLowerCase().includes(q) || g.service.toLowerCase().includes(q))
+    ? sorted.filter(
+        (g) => g.label.toLowerCase().includes(q) || g.services.some((s) => s.toLowerCase().includes(q)),
+      )
     : sorted;
 
   const sections = useMemo(() => {
@@ -64,7 +66,7 @@ export function ServiceGroupBrowser({ groups }: { groups: ServiceGroup[] }) {
             <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {filtered.map((g) => (
                 <ServiceGroupCard
-                  key={g.service}
+                  key={g.label}
                   label={g.label}
                   resourceCount={g.resourceCount}
                   dataSourceCount={g.dataSourceCount}
@@ -106,7 +108,7 @@ export function ServiceGroupBrowser({ groups }: { groups: ServiceGroup[] }) {
               <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {letterGroups.map((g) => (
                   <ServiceGroupCard
-                    key={g.service}
+                    key={g.label}
                     label={g.label}
                     resourceCount={g.resourceCount}
                     dataSourceCount={g.dataSourceCount}

@@ -292,7 +292,27 @@ function siblingHref(providerKey: string, version: string, r: ResourceSummary): 
 }
 
 export type ServiceGroup = {
-  service: string;
+  // Every real service directory this card's own label covers -- a
+  // real, found-live bug (not UBI-242's AWS-only CFN/Smithy split,
+  // ruled out directly: Datadog and GitHub show the identical shape
+  // with no CFN/Smithy involvement at all): categories.json routinely,
+  // legitimately maps MULTIPLE distinct real service directories to
+  // ONE human label on purpose (confirmed against the real corpus --
+  // AWS's own "AWS Billing and Cost Management" spans six real,
+  // separate services: billing, billingconductor, bcm,
+  // bcmdataexports, bcmpricingcalculator, invoicing; "Amazon API
+  // Gateway" genuinely spans apigateway (v1, REST) and apigatewayv2
+  // (v2, HTTP/WebSocket) -- both real AWS products, correctly grouped
+  // under one name). Grouping by `service` (this card's own previous
+  // key) rendered one card per real service directory, so a
+  // multi-service label rendered as that many identical-looking cards.
+  // Grouping by `label` here fixes it at the real, general cause --
+  // present in every provider whose own categories.json curators did
+  // this (confirmed live: AWS, Azure, Google, Datadog, GitHub all
+  // have real duplicate-label cases; Kubernetes and DigitalOcean
+  // happen to have none, which is why this was easy to miss testing
+  // against Kubernetes alone).
+  services: string[];
   label: string;
   resourceCount: number;
   dataSourceCount: number;
@@ -309,30 +329,36 @@ export type ServiceGroup = {
 
 export function listServiceGroups(providerKey: string, version: string): ServiceGroup[] {
   const resources = listResources(providerKey, version);
-  const byService = new Map<string, ResourceSummary[]>();
+  const byLabel = new Map<string, ResourceSummary[]>();
   for (const r of resources) {
-    const existing = byService.get(r.service);
+    const existing = byLabel.get(r.category);
     if (existing) existing.push(r);
-    else byService.set(r.service, [r]);
+    else byLabel.set(r.category, [r]);
   }
 
   const groups: ServiceGroup[] = [];
-  for (const [service, items] of byService) {
-    const resourceItems = items.filter((r) => !r.isDataSource).sort((a, b) => a.localName.localeCompare(b.localName));
-    const dataSourceItems = items.filter((r) => r.isDataSource).sort((a, b) => a.localName.localeCompare(b.localName));
+  for (const [label, items] of byLabel) {
+    // dottedName (service.PascalLocalName) rather than bare localName --
+    // a label spanning multiple real services should pick its "first"
+    // resource in service order first, not interleave every
+    // constituent service's own resources purely alphabetically by
+    // local name, which would pick unpredictably across services.
+    const resourceItems = items.filter((r) => !r.isDataSource).sort((a, b) => a.dottedName.localeCompare(b.dottedName));
+    const dataSourceItems = items.filter((r) => r.isDataSource).sort((a, b) => a.dottedName.localeCompare(b.dottedName));
     // Resources before data sources, matching the sidebar's own real
     // Resources-before-Data-sources grouping (ResourceDetailView) --
     // consistent rather than an independent, possibly-diverging order.
     const first = resourceItems[0] ?? dataSourceItems[0];
+    const services = [...new Set(items.map((r) => r.service))].sort();
     groups.push({
-      service,
-      label: items[0].category,
+      services,
+      label,
       resourceCount: resourceItems.length,
       dataSourceCount: dataSourceItems.length,
       firstHref: siblingHref(providerKey, version, first),
     });
   }
-  return groups.sort((a, b) => a.service.localeCompare(b.service));
+  return groups.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 // pickStarterResource chooses the real resource the provider home
