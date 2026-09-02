@@ -21,8 +21,15 @@
   --color-foreground-muted: #57534e;
 }
 
+/* Dark values live in two places on purpose, matching this project's
+   own theme-token contract: once under the media query, guarded so an
+   explicit "light" choice can still win against a dark OS; once under
+   the explicit [data-theme="dark"] selector, for an explicit "dark"
+   choice to win against a light OS. No [data-theme] attribute at all
+   means "follow the OS", which is the only behavior that existed
+   before the toggle -- unchanged for a reader who's never touched it. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-background: #14130f;
     --color-surface: #1f1d19;
     --color-border: #35322c;
@@ -35,6 +42,15 @@
        surface. */
     --color-accent-yellow: #e8bb4a;
   }
+}
+
+:root[data-theme="dark"] {
+  --color-background: #14130f;
+  --color-surface: #1f1d19;
+  --color-border: #35322c;
+  --color-foreground: #f2f0ec;
+  --color-foreground-muted: #b5b1a9;
+  --color-accent-yellow: #e8bb4a;
 }
 
 @theme inline {
@@ -57,4 +73,25 @@ body {
 
 code, pre, .font-mono-tabular {
   font-family: ui-monospace, monospace;
+}
+
+/* Header's own light/dark logo pair -- same [data-theme] contract as
+   the color tokens above, so the logo always matches whichever palette
+   is actually showing, explicit choice or OS default. */
+.logo-dark {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .logo-dark {
+    display: block;
+  }
+}
+:root[data-theme="dark"] .logo-light {
+  display: none;
+}
+:root[data-theme="dark"] .logo-dark {
+  display: block;
 }
