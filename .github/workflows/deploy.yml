@@ -1,0 +1,65 @@
+name: deploy
+
+# Deployment slice (UBI-240): builds the real static export and pushes
+# it to Cloudflare Pages via wrangler's own direct-upload path -- the
+# same real, measured shape this decision was made against (output:
+# "export", ~2.2GB extracted, ~68,000 files, ~90s cold build including
+# the real 4.6GB artifact fetch). Cloudflare Pages Free caps a site at
+# 20,000 files; this site's own real file count needs the Workers Paid
+# plan ($5/month minimum, which Pages billing now rides on) to raise
+# that cap to 100,000. See this repo's own CLAUDE.md for the real
+# numbers and the host comparison that led here.
+#
+# Requires two real, account-level secrets neither this workflow nor
+# any command in it can create: CLOUDFLARE_API_TOKEN and
+# CLOUDFLARE_ACCOUNT_ID (Cloudflare dashboard -> My Profile -> API
+# Tokens for the former, the account's own dashboard URL/sidebar for
+# the latter). The Workers Paid plan itself also needs enabling once,
+# by someone with billing access to the real Cloudflare account -- ubx
+# sdk init-repo's own NPM_TOKEN/PYPI_TOKEN precedent is the same real
+# shape: this workflow cannot provision a credential or a subscription
+# on anyone's behalf, only use one once it exists.
+#
+# The first real run also needs a Pages project to deploy into --
+# `npx wrangler pages project create ubx-docs-providers` once, by
+# someone with the real account access above (or let this workflow's
+# own `wrangler pages deploy` attempt create it automatically on first
+# run, then confirm via the Cloudflare dashboard that it landed as
+# expected before trusting subsequent runs).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Fetch docs artifacts, build search index, build the real static export
+        # npm run build already runs prebuild (fetch-docs + build-search-index)
+        # first -- this is the real, measured ~90s cold path (GITHUB_TOKEN
+        # avoids the anonymous GitHub API's own real propagation-lag risk
+        # on a brand-new release, confirmed live in UBI-240 slice 2).
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler pages deploy out --project-name=ubx-docs-providers --branch=main

@@ -10,6 +10,17 @@ Versioned per SDK release, like Terraform's own provider docs: a
 reader on `ubx-sdk-aws` 2.1.0 sees that version's pages, sealed, never
 edited in place. Fixing a typo means cutting a new SDK version.
 
+## Deployment (UBI-240 slice 5)
+
+Cloudflare Pages, Workers Paid plan -- the real static export is 2.2GB
+across 67,924 files, past Cloudflare's own 20,000-file Free-tier cap
+and GitHub Pages' ~1GB soft cap outright. `.github/workflows/deploy.yml`
+is wired; the first real deploy needs `CLOUDFLARE_API_TOKEN`/
+`CLOUDFLARE_ACCOUNT_ID` as real repo secrets and the Workers Paid plan
+enabled on the real Cloudflare account. See `CLAUDE.md`'s own "Slice 5"
+section for the full real numbers, including why disabling RSC
+prefetch was tested and found to change nothing.
+
 ## Slices 1 through 4 (UBI-240)
 
 All seven providers are in: Kubernetes, AWS, Azure, Google Cloud,

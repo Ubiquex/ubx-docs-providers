@@ -264,6 +264,53 @@ schema-generation bug rather than real provider scale -- worth watching
 if UBI-243's own root cause turns out not to be unique to Azure
 networking.
 
+## Slice 5 (UBI-240): deployment
+
+**Real numbers first, decision second.** The `.next` build directory
+(2.1GB) was never the real deployable size -- a real `output: "export"`
+build was required to find out, and it came back at **2.2GB**, larger
+than `.next`, not smaller. `/[provider]/page.tsx` (a bare redirect to
+the latest version) had no `generateStaticParams`, so static export
+refused to build at all until that was added -- a real, one-line,
+harmless fix, kept regardless of host. Real file count: **67,924**,
+against GitHub Pages' own ~1GB soft cap (ruled out outright) and
+Cloudflare Pages' real, confirmed 20,000-file cap on its Free tier (a
+real block, not close -- about 3.4x over).
+
+**Real, cold, end-to-end build time: ~90 seconds**, not just the ~53-60s
+render step -- `.docs-cache` cleared entirely first: `fetch-docs` (the
+real 4.6GB artifact fetch across all seven providers' own GitHub
+Releases) took 26.4s, `build-search-index` 2.1s, `next build` 53-60s
+depending on export mode. Comfortably inside every host's own build
+timeout considered (GitHub Pages 10min, Cloudflare Pages 20min, Vercel
+45min) -- size, never build time, was the real constraint throughout.
+
+**A real hypothesis, tested and found wrong, not assumed either way**:
+disabling RSC prefetch (`<Link prefetch={false}>`) on every real
+`<Link>` in the app -- not just the service tree and search results,
+the whole app, to isolate the variable cleanly -- produced an
+**identical** 2.2GB / 67,924 files, confirmed by a real before/after
+build comparison. Next.js's static export generates the RSC navigation
+payload per route segment unconditionally, independent of any Link's
+own prefetch setting anywhere in the app -- the payload exists to
+support client-side navigation TO a route at all, prefetched ahead of
+time or fetched lazily on click, and `prefetch={false}` only changes
+which of those two happens in the browser, never what the build emits.
+Reverted -- keeping prefetch on costs nothing extra in the real export
+and disabling it would have cost real navigation speed for zero size
+benefit.
+
+**Host: Cloudflare Pages, Workers Paid plan ($5/month minimum)** -- the
+real file count needs the paid tier's 100,000-file cap regardless of
+the prefetch question, which turned out not to move the number at all.
+`.github/workflows/deploy.yml` is real and wired (`wrangler pages
+deploy`), but the actual first deployment needs two real, account-level
+secrets (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) and the
+Workers Paid plan itself enabled by someone with real billing access to
+the Cloudflare account -- the same real shape as `NPM_TOKEN`/
+`PYPI_TOKEN` in every SDK repo's own onboarding: this workflow can use
+a credential, never create one.
+
 ## Git rules
 
 PR-only, never self-merge, matching every repo in this org except
