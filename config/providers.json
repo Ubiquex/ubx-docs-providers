@@ -6,7 +6,7 @@
       "description": "Deployments, services, config, and everything else a real cluster runs.",
       "repo": "ubiquex/ubx-sdk-kubernetes",
       "tier": "official",
-      "versions": ["1.0.0", "1.1.0"]
+      "versions": ["1.0.0", "1.1.0", "1.1.1"]
     },
     "aws": {
       "name": "AWS",
@@ -14,42 +14,42 @@
       "repo": "ubiquex/ubx-sdk-aws",
       "tier": "official",
       "goModule": "github.com/ubiquex/ubx-sdk-aws/sdk/go/v2",
-      "versions": ["2.1.0"]
+      "versions": ["2.1.0", "2.2.1"]
     },
     "azure": {
       "name": "Azure",
       "description": "Real Azure Resource Manager resources across every real ARM provider namespace.",
       "repo": "ubiquex/ubx-sdk-azure",
       "tier": "official",
-      "versions": ["1.2.0"]
+      "versions": ["1.2.0", "1.2.1"]
     },
     "google": {
       "name": "Google Cloud",
       "description": "Real GCP resources and data sources, generated from Google's own discovery documents.",
       "repo": "ubiquex/ubx-sdk-google",
       "tier": "official",
-      "versions": ["1.3.0"]
+      "versions": ["1.3.0", "1.3.1"]
     },
     "datadog": {
       "name": "Datadog",
       "description": "Monitors, dashboards, and everything else a real Datadog account configures.",
       "repo": "ubiquex/ubx-sdk-datadog",
       "tier": "official",
-      "versions": ["1.3.0"]
+      "versions": ["1.3.0", "1.3.1"]
     },
     "github": {
       "name": "GitHub",
       "description": "Real repos, teams, and org configuration as GitHub's own REST API exposes it.",
       "repo": "ubiquex/ubx-sdk-github",
       "tier": "official",
-      "versions": ["1.2.0"]
+      "versions": ["1.2.0", "1.2.1"]
     },
     "digitalocean": {
       "name": "DigitalOcean",
       "description": "Droplets, databases, and the rest of DigitalOcean's own real resource surface.",
       "repo": "ubiquex/ubx-sdk-digitalocean",
       "tier": "official",
-      "versions": ["1.0.0"]
+      "versions": ["1.0.0", "1.0.1"]
     }
   }
 }

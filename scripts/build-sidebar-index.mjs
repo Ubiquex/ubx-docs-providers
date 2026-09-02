@@ -9,11 +9,11 @@
 // the way Terraform's own provider docs do it.
 //
 // A static file fetched client-side, not embedded per-page, on
-// purpose: AWS alone has 651 groups covering 6,241 real resources and
-// data sources combined. Embedding that full tree in every one of
-// AWS's own ~12,241 real static pages would multiply a few hundred KB
-// by five figures -- fetched once instead (this file, cached by the
-// browser across every page of one provider/version, exactly the
+// purpose: AWS alone covers 6,241 real resources and data sources
+// combined. Embedding that full tree in every one of AWS's own
+// ~12,241 real static pages would multiply a few hundred KB by five
+// figures -- fetched once instead (this file, cached by the browser
+// across every page of one provider/version, exactly the
 // public/search-index.json precedent already established here) it's
 // paid once per real visit, not once per page.
 //
@@ -37,13 +37,6 @@ function pascalCase(localName) {
     .join("");
 }
 
-function titleCase(s) {
-  return s
-    .split(/[_-]/)
-    .map((p) => (p ? p.charAt(0).toUpperCase() + p.slice(1) : p))
-    .join(" ");
-}
-
 function listCachedVersions(providerKey) {
   const dir = join(cacheRoot, providerKey);
   if (!existsSync(dir)) return [];
@@ -52,44 +45,27 @@ function listCachedVersions(providerKey) {
     .map((e) => e.name);
 }
 
-// UBI-245's own real, found-live cause, generalized after checking
-// data-source-only sidebar groups directly against the schema
-// (real, confirmed live, not assumed): categories.json's override
-// coverage is not just occasionally partial, it is systematically
-// asymmetric between resources and data sources -- real, measured
-// coverage across all seven providers: resources 90-100% covered,
-// data sources as low as 1.1% (AWS) and 5.1% (Google). A service whose
-// resources are fully covered under one real product label but whose
-// data sources have NO override at all splits into two groups: the
-// real label (all resources) and a naive titleCase(service) fallback
-// (all data sources) -- confirmed live, e.g. AWS's real apigateway
-// service: "Amazon API Gateway" (37 resources, 0 data sources shown)
-// and a separate "Apigateway" (0 resources, 28 data sources) -- the
-// SAME real service, not two. This is a stronger case than a same-
-// word casing mismatch (AWS's own "uxc" -> "UXC" vs "Uxc"), the
-// original, narrower version of this fix only caught -- "Apigateway"
-// and "Amazon API Gateway" don't collide case-insensitively at all.
-//
-// Fixed generally: if every wire type of a service that DOES carry a
-// real override agrees on exactly ONE distinct label, an uncovered
-// wire type of that SAME service adopts that one real label too,
-// regardless of whether its own naive fallback happens to resemble it.
-// Deliberately still narrow where the schema itself doesn't agree
-// which label a service belongs to -- AWS's own ec2 legitimately
-// carries four distinct real labels across its own covered wire types
-// ("Amazon EC2", "Amazon VPC", "AWS Transit Gateway", "AWS Verified
-// Access"), confirmed live; an uncovered ec2 wire type still falls
-// back to the honest "Ec2" rather than guessing which of the four it
-// belongs to. Duplicated here rather than imported from lib/docs.ts,
-// matching this codebase's own established convention (build-search-
-// index.mjs and build-examples.mjs both already duplicate their own
-// small slice of shared pure logic rather than importing the TS-only
-// lib/ modules into a plain .mjs script).
-function resolveCategory(service, override, realLabelsByService) {
-  if (override) return override;
-  const real = realLabelsByService.get(service);
-  if (real && real.size === 1) return [...real.values()][0];
-  return titleCase(service);
+// UBI-245: categories.json override coverage is now complete (every
+// real resource and data source across all seven providers carries a
+// real, authored label -- verified live, zero remaining gaps). The
+// inference this function used to do (single-label inheritance across
+// a service's own sibling wire types, and beneath that a naive
+// titleCase(service) guess) existed only to paper over incomplete
+// coverage, and it hid the gap: an uncovered wire type rendered inside
+// a plausible-looking group instead of surfacing as uncovered. Now
+// that coverage is real, a wire type with no override is not silently
+// guessed -- it surfaces honestly in its own UNCATEGORIZED_LABEL
+// group, which should be empty in steady state and is a visible signal
+// (not a silent one) the moment a new resource or data source ships
+// ahead of its own real category label. Duplicated here rather than
+// imported from lib/docs.ts, matching this codebase's own established
+// convention (build-search-index.mjs and build-examples.mjs both
+// already duplicate their own small slice of shared pure logic rather
+// than importing the TS-only lib/ modules into a plain .mjs script).
+const UNCATEGORIZED_LABEL = "Uncategorized";
+
+function resolveCategory(override) {
+  return override ?? UNCATEGORIZED_LABEL;
 }
 
 function buildTreeFor(providerKey, version) {
@@ -103,25 +79,14 @@ function buildTreeFor(providerKey, version) {
     : { overrides: {} };
   const overrides = categories.overrides ?? {};
 
-  const realLabelsByService = new Map();
-  for (const [wireType, entry] of Object.entries(schema)) {
-    const categoryKey = wireType.startsWith("data_") ? wireType.slice("data_".length) : wireType;
-    const label = overrides[categoryKey]?.label;
-    if (!label) continue;
-    let byLower = realLabelsByService.get(entry.service);
-    if (!byLower) {
-      byLower = new Map();
-      realLabelsByService.set(entry.service, byLower);
-    }
-    if (!byLower.has(label.toLowerCase())) byLower.set(label.toLowerCase(), label);
-  }
-
   const byLabel = new Map();
+  let categorizedCount = 0;
   for (const [wireType, entry] of Object.entries(schema)) {
     const isDataSource = wireType.startsWith("data_");
     const categoryKey = isDataSource ? wireType.slice("data_".length) : wireType;
     const override = overrides[categoryKey]?.label;
-    const label = resolveCategory(entry.service, override, realLabelsByService);
+    if (override) categorizedCount++;
+    const label = resolveCategory(override);
     let group = byLabel.get(label);
     if (!group) {
       group = { label, resources: [], dataSources: [] };
@@ -142,7 +107,12 @@ function buildTreeFor(providerKey, version) {
     g.dataSources.sort((a, b) => a.dottedName.localeCompare(b.dottedName));
   }
   groups.sort((a, b) => a.label.localeCompare(b.label));
-  return { groups };
+
+  const total = Object.keys(schema).length;
+  return {
+    groups,
+    coverage: { total, categorized: categorizedCount },
+  };
 }
 
 function main() {
@@ -157,8 +127,12 @@ function main() {
       const outPath = join(dir, `${version}.json`);
       writeFileSync(outPath, JSON.stringify(tree));
       written++;
+      const { total, categorized } = tree.coverage;
+      const uncategorized = total - categorized;
+      const flag = uncategorized > 0 ? ` -- ${uncategorized} UNCATEGORIZED` : "";
       console.log(
-        `[build-sidebar-index] ${providerKey}@${version}: ${tree.groups.length} group(s) -> ${outPath}`,
+        `[build-sidebar-index] ${providerKey}@${version}: ${tree.groups.length} group(s), ` +
+          `${categorized}/${total} categorized${flag} -> ${outPath}`,
       );
     }
   }

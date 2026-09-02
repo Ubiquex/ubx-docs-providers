@@ -644,9 +644,22 @@ function formatBatch(entries, ext, formatFn) {
   }
 }
 
+// execFileSync's default maxBuffer is 1MB -- fine at Kubernetes-only
+// scale, not once UBI-245's own new versions roughly doubled the real
+// example count (24608, up from ~12000-ish): both gofmt and deno fmt
+// print real per-file diagnostics to stderr as they walk the scratch
+// tree, and that output alone can cross 1MB before either tool ever
+// gets to a real syntax error. Found live: deno fmt's own captured
+// stderr got silently truncated mid-listing with no trailing message,
+// which read like a real formatting rejection until checked against
+// deno fmt run standalone. Raised generously (64MB) rather than tuned
+// precisely to today's count, so the next scale jump doesn't repeat
+// this.
+const FMT_MAX_BUFFER = 64 * 1024 * 1024;
+
 function gofmtDir(dir) {
   try {
-    execFileSync("gofmt", ["-w", dir], { stdio: ["ignore", "pipe", "pipe"] });
+    execFileSync("gofmt", ["-w", dir], { stdio: ["ignore", "pipe", "pipe"], maxBuffer: FMT_MAX_BUFFER });
   } catch (err) {
     throw new Error(`gofmt rejected generated Go source in ${dir}:\n${err.stderr}`);
   }
@@ -654,7 +667,10 @@ function gofmtDir(dir) {
 
 function denoFmtDir(dir) {
   try {
-    execFileSync("deno", ["fmt", "--ext", "ts", dir], { stdio: ["ignore", "pipe", "pipe"] });
+    execFileSync("deno", ["fmt", "--ext", "ts", dir], {
+      stdio: ["ignore", "pipe", "pipe"],
+      maxBuffer: FMT_MAX_BUFFER,
+    });
   } catch (err) {
     throw new Error(`deno fmt rejected generated TS source in ${dir}:\n${err.stderr}`);
   }
