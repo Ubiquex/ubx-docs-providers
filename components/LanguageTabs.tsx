@@ -38,7 +38,7 @@ export function LanguageTabs({ examples }: { examples: Record<Lang, string> }) {
         {langs.map((lang) => (
           <div
             key={lang}
-            className={"col-start-1 row-start-1 " + (lang === active ? "visible" : "invisible")}
+            className={"col-start-1 row-start-1 min-w-0 " + (lang === active ? "visible" : "invisible")}
             aria-hidden={lang !== active}
           >
             <CodeBlock code={examples[lang]} lang={lang} />
