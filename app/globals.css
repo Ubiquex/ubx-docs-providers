@@ -67,43 +67,44 @@
    before the toggle -- unchanged for a reader who's never touched it. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-background: #1b1b1b;
-    --color-surface: #2d2e30;
-    --color-field: #2d2e30;
-    --color-code-bg: #131314;
-    --color-border: #3c4043;
+    /* Dark page background matched to ubiquex-docs's own real, live
+       value -- read directly from that repo's custom.css
+       (--mint-color-background: #0d0d0d under its own :root, the
+       Mintlify site's actual dark background), not approximated.
+       Was #1b1b1b. Surface/field, code-bg, and border are re-derived
+       from that same file's OLD values (#2d2e30, #131314, #3c4043)
+       by preserving each one's own HSL lightness delta from the OLD
+       background (#1b1b1b) and re-applying that delta to the NEW one,
+       rather than picking new numbers by eye -- the same elevation
+       relationship (surface raised above page, code-bg receding below
+       it) carries over instead of being redrawn from scratch. */
+    --color-background: #0d0d0d;
+    --color-surface: #1f2022;
+    --color-field: #1f2022;
+    --color-code-bg: #050506;
+    --color-border: #2f3234;
     --color-foreground: #e8eaed;
     --color-foreground-muted: #9aa0a6;
 
-    /* 00A693 measures well under AA against #1b1b1b -- real, measured,
-       not assumed from "it's a saturated color so it must be fine".
-       4ECFB0 is the same Persian-green hue, lightened until it clears
-       AA with real margin (8.9:1 on #1b1b1b, 7.6:1 on #2d2e30). Text
-       stays this color throughout (links, headings, argument names);
-       the one place primary fills a solid background (ThemeToggle's
-       active state) needs a dark foreground now instead of white,
-       since white-on-4ecfb0 fails AA the same way black-on-00a693
-       never had to worry about -- --color-background itself (already
-       a real, dark, cohesive tone) is what's used for that, not a new
-       token. */
+    /* Every color re-checked against the new backgrounds rather than
+       assumed to still pass just because the old, lighter ones did --
+       a darker base only ever raises contrast for a light foreground
+       color, but confirmed rather than assumed. 4ECFB0 primary: 16.13
+       :1 foreground / 10.07:1 primary itself on the new page bg (was
+       8.9:1 on #1b1b1b) -- comfortably clear, real margin grew. */
     --color-primary: #4ecfb0;
-    --color-primary-foreground: #1b1b1b;
+    --color-primary-foreground: #0d0d0d;
 
-    /* The design pass flagged this explicitly: the yellow reads thin on
-       dark backgrounds. One lighter stop here, nowhere else -- primary
-       and the red both already carry enough contrast on a dark
-       surface. Re-checked against the new #1b1b1b/#2d2e30/#131314 --
-       10.1:1 / 8.9:1 / 11.4:1, all comfortably clear. */
+    /* Re-checked against the new #0d0d0d/#1f2022/#050506: 10.77:1 /
+       9.04:1 / 11.29:1, all comfortably clear (was 10.1:1/8.9:1/11.4:1
+       against the old backgrounds -- margins held, one grew, none
+       dropped). */
     --color-accent-yellow: #e8bb4a;
 
-    /* Given dark stops for syntax theme A, checked against every real
-       dark background rather than assumed since one dark stop (green)
-       coincides with --color-primary's own and the other two don't
-       match any existing token: 4ECFB0 green 9.62:1 on the code
-       surface (131314) / 7.04:1 on 2d2e30 / 8.92:1 on 1b1b1b. F08A80
-       red 7.65:1 / 5.60:1 / 7.10:1. E6C07B yellow 10.78:1 / 7.89:1 /
-       10.00:1. All comfortably clear on every real surface these
-       tokens can render against. */
+    /* Syntax theme A dark stops, re-checked against the new
+       backgrounds: 4ECFB0 green 10.55:1 code-bg / 8.44:1 surface /
+       10.07:1 page. F08A80 red 8.39:1 / 6.72:1 / 8.01:1. E6C07B
+       yellow 11.83:1 / 9.46:1 / 11.28:1. All comfortably clear. */
     --color-code-green: #4ecfb0;
     --color-code-red: #f08a80;
     --color-code-yellow: #e6c07b;
@@ -111,15 +112,15 @@
 }
 
 :root[data-theme="dark"] {
-  --color-background: #1b1b1b;
-  --color-surface: #2d2e30;
-  --color-field: #2d2e30;
-  --color-code-bg: #131314;
-  --color-border: #3c4043;
+  --color-background: #0d0d0d;
+  --color-surface: #1f2022;
+  --color-field: #1f2022;
+  --color-code-bg: #050506;
+  --color-border: #2f3234;
   --color-foreground: #e8eaed;
   --color-foreground-muted: #9aa0a6;
   --color-primary: #4ecfb0;
-  --color-primary-foreground: #1b1b1b;
+  --color-primary-foreground: #0d0d0d;
   --color-accent-yellow: #e8bb4a;
   --color-code-green: #4ecfb0;
   --color-code-red: #f08a80;
