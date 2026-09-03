@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
+import { MobileSidebarToggle } from "@/components/MobileSidebarToggle";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
 import { getDataSource, getProvider, listCachedVersions, listProviders, listResources } from "@/lib/docs";
 import { exampleFor } from "@/lib/examples";
@@ -41,7 +42,15 @@ export default async function DataSourcePage({
 
   return (
     <>
-      <Header />
+      <Header
+        mobileMenu={
+          <MobileSidebarToggle
+            providerKey={provider}
+            version={version}
+            current={{ service, localName: resource, isDataSource: true }}
+          />
+        }
+      />
       <ResourceDetailView
         provider={provider}
         version={version}
