@@ -24,7 +24,7 @@ export function ResourceDetailView({
 }) {
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
         <ProviderSidebar
           providerKey={provider}
           version={version}
@@ -35,9 +35,9 @@ export function ResourceDetailView({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-primary">{detail.dottedName}</h1>
+                <h1 className="text-2xl font-medium text-primary">{detail.dottedName}</h1>
                 {detail.isDataSource && (
-                  <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground-muted">
+                  <span className="rounded-full bg-foreground-muted/10 px-2 py-0.5 text-xs font-medium text-foreground-muted">
                     data source
                   </span>
                 )}
@@ -54,7 +54,7 @@ export function ResourceDetailView({
             />
           </div>
 
-          {detail.intro && <p className="mt-4 text-foreground">{detail.intro}</p>}
+          {detail.intro && <p className="mt-4 leading-relaxed text-foreground">{detail.intro}</p>}
 
           <section className="mt-8">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground-muted">

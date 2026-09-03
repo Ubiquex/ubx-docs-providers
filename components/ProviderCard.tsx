@@ -21,10 +21,10 @@ export function ProviderCard({
   return (
     <Link
       href={`/${providerKey}/${version}`}
-      className="block rounded-lg border border-border bg-surface p-5 transition-colors hover:border-primary"
+      className="block rounded-2xl bg-surface p-5 shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="flex items-center gap-3">
-        <h3 className="text-lg font-semibold text-primary">{name}</h3>
+        <h3 className="text-lg font-medium text-primary">{name}</h3>
         <TierBadge tier={tier} />
       </div>
       <p className="mt-2 text-sm text-foreground-muted">{description}</p>

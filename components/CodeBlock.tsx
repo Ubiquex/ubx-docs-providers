@@ -86,7 +86,7 @@ const KIND_CLASS: Record<Token["kind"], string> = {
 export function CodeBlock({ code, lang }: { code: string; lang: Lang }) {
   const lines = code.replace(/\n$/, "").split("\n");
   return (
-    <pre className="overflow-x-auto rounded-lg border border-border bg-surface p-4 text-sm leading-relaxed">
+    <pre className="overflow-x-auto rounded-2xl bg-code p-4 text-sm leading-relaxed">
       <code className="font-mono-tabular">
         {lines.map((line, i) => (
           <div key={i}>

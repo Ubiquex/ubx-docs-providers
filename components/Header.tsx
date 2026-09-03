@@ -34,7 +34,7 @@ const NAV_LINKS: { label: string; href: string }[] = [
 export function Header() {
   return (
     <header className="border-b border-border bg-background">
-      <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
         <Link href="/" className="flex shrink-0 items-center">
           <img src="/logo/logo.png" alt="ubx" className="logo-light h-6 w-auto" />
           <img src="/logo/logo-dark.png" alt="ubx" className="logo-dark h-6 w-auto" />
