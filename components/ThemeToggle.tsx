@@ -39,8 +39,21 @@ function subscribe(callback: () => void) {
 }
 
 function getSnapshot(): ThemeChoice {
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === "light" || stored === "dark" ? stored : "system";
+  // Same real risk app/layout.tsx's own inline THEME_INIT_SCRIPT
+  // already guards against for the identical read -- private
+  // browsing, a restrictive mobile browser or in-app-browser storage
+  // policy, or a managed device can make localStorage throw rather
+  // than return null. This runs inside useSyncExternalStore, during
+  // React's render pass, in a component mounted in Header on every
+  // page -- an uncaught throw here, with no error boundary anywhere
+  // in this app, can fail hydration for the whole page, not just this
+  // control.
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    return stored === "light" || stored === "dark" ? stored : "system";
+  } catch {
+    return "system";
+  }
 }
 
 function getServerSnapshot(): ThemeChoice {
@@ -98,8 +111,14 @@ export function ThemeToggle() {
 
   function choose(next: ThemeChoice) {
     applyTheme(next);
-    if (next === "system") window.localStorage.removeItem(STORAGE_KEY);
-    else window.localStorage.setItem(STORAGE_KEY, next);
+    try {
+      if (next === "system") window.localStorage.removeItem(STORAGE_KEY);
+      else window.localStorage.setItem(STORAGE_KEY, next);
+    } catch {
+      // Storage blocked -- the choice still applies to this page via
+      // applyTheme/data-theme above, it just will not persist across
+      // a reload. Never let a blocked write crash the click handler.
+    }
     window.dispatchEvent(new Event("ubx-theme-change"));
   }
 
