@@ -143,8 +143,8 @@ export function ProviderSidebar({
               href={itemHref(providerKey, version, item.service, item.localName, isDataSource)}
               className={
                 isCurrent(item, isDataSource)
-                  ? "-ml-2 block rounded-r-full bg-primary/10 py-1 pl-4 pr-3 text-sm font-medium text-primary"
-                  : "-ml-2 block rounded-r-full py-1 pl-4 pr-3 text-sm text-foreground-muted hover:bg-surface hover:text-primary"
+                  ? "-ml-1 block rounded-r-full bg-primary/10 py-1 pl-6 pr-3 text-sm font-medium text-primary"
+                  : "-ml-1 block rounded-r-full py-1 pl-6 pr-3 text-sm text-foreground-muted hover:bg-surface hover:text-primary"
               }
             >
               {item.dottedName}
