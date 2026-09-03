@@ -56,7 +56,7 @@
       "description": "Zones, DNS, Workers, and the rest of Cloudflare's own real resource surface.",
       "repo": "ubiquex/ubx-sdk-cloudflare",
       "tier": "official",
-      "versions": ["1.0.0"]
+      "versions": ["1.0.1"]
     }
   }
 }
