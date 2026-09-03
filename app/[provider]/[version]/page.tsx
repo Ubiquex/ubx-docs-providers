@@ -30,7 +30,7 @@ export default async function ProviderHomePage({
   return (
     <>
       <Header mobileMenu={<MobileSidebarToggle providerKey={provider} version={version} />} />
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto w-full max-w-7xl px-6 py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
           <ProviderSidebar providerKey={provider} version={version} />
 
