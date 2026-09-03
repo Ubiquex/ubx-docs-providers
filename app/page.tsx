@@ -24,7 +24,7 @@ export default function HomePage() {
     <>
       <Header />
       <main className="mx-auto max-w-7xl px-6 py-12">
-        <h1 className="text-center text-5xl font-medium text-foreground">
+        <h1 className="text-center text-4xl font-medium text-foreground">
           Provider reference for <span className="text-primary">ubx</span>
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-center leading-relaxed text-foreground-muted">
