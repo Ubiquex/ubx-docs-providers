@@ -29,13 +29,13 @@ export default async function ProviderHomePage({
   return (
     <>
       <Header />
-      <main className="mx-auto max-w-6xl px-6 py-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[240px_1fr]">
+      <main className="mx-auto max-w-7xl px-6 py-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
           <ProviderSidebar providerKey={provider} version={version} />
 
           <div className="min-w-0">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-primary">{cfg.name}</h1>
+              <h1 className="text-3xl font-medium text-primary">{cfg.name}</h1>
               <TierBadge tier={cfg.tier} />
             </div>
             <p className="mt-2 text-foreground-muted">{cfg.description}</p>

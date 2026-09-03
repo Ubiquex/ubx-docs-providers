@@ -51,10 +51,10 @@ export function GlobalSearch() {
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Search resources and data sources..."
-        className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-base outline-none focus:border-primary"
+        className="w-full rounded-full bg-field px-5 py-3 text-base text-foreground outline-none placeholder:text-foreground-muted focus:ring-2 focus:ring-primary/30"
       />
       {q && (
-        <div className="absolute z-10 mt-2 w-full rounded-lg border border-border bg-background shadow-lg">
+        <div className="absolute z-10 mt-2 w-full rounded-2xl bg-surface shadow-lg">
           {results.length === 0 ? (
             <p className="px-4 py-3 text-sm text-foreground-muted">No matches for &ldquo;{query}&rdquo;.</p>
           ) : (
@@ -70,7 +70,7 @@ export function GlobalSearch() {
                       <span className="ml-2 text-xs text-foreground-muted">{r.providerName}</span>
                     </span>
                     {r.isDataSource && (
-                      <span className="shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-foreground-muted">
+                      <span className="shrink-0 rounded-full bg-foreground-muted/10 px-2 py-0.5 text-xs text-foreground-muted">
                         data
                       </span>
                     )}

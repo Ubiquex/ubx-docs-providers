@@ -136,15 +136,15 @@ export function ProviderSidebar({
 
   function renderItems(items: SidebarItem[], isDataSource: boolean) {
     return (
-      <ul className="mt-1 space-y-1 border-l border-border pl-2">
+      <ul className="mt-1 space-y-0.5">
         {items.map((item) => (
           <li key={`${isDataSource ? "data" : "resource"}-${item.service}-${item.localName}`}>
             <Link
               href={itemHref(providerKey, version, item.service, item.localName, isDataSource)}
               className={
                 isCurrent(item, isDataSource)
-                  ? "block rounded px-2 py-1 text-sm font-medium text-primary"
-                  : "block rounded px-2 py-1 text-sm text-foreground-muted hover:text-primary"
+                  ? "-ml-2 block rounded-r-full bg-primary/10 py-1 pl-4 pr-3 text-sm font-medium text-primary"
+                  : "-ml-2 block rounded-r-full py-1 pl-4 pr-3 text-sm text-foreground-muted hover:bg-surface hover:text-primary"
               }
             >
               {item.dottedName}
@@ -179,7 +179,7 @@ export function ProviderSidebar({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={data ? `Filter ${data.groups.length} service groups...` : "Loading..."}
-        className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm outline-none focus:border-primary"
+        className="w-full rounded-full bg-field px-4 py-2 text-sm text-foreground outline-none placeholder:text-foreground-muted focus:ring-2 focus:ring-primary/30"
       />
       <div className="mt-3 max-h-[calc(100vh-10rem)] overflow-y-auto pr-1">
         {filtered.map((group) => {

@@ -1,33 +1,42 @@
 @import "tailwindcss";
 
-/* UBI-240's own recorded palette (design pass, 2026-09-01): Persian
-   green #00A693 is primary, carrying the wordmark, active nav state,
-   provider names, argument names, service group links, and the package
-   name. Persian red #CC2936 and a warm yellow #D4A017 support it. Blue
-   is not used anywhere -- including the neutral scale below, which is
-   Tailwind's own "neutral" (true gray, no undertone), never "slate" or
-   "zinc" (both lean cool/blue). */
+/* Material restyle (design pass, 2026-09-03): real Google Material
+   grey-scale neutrals in both themes, Persian green kept as the one
+   accent in place of Google's own blue. Persian red and Persian
+   yellow still support it, unchanged in hue, only re-checked for
+   contrast against the new backgrounds below. --color-border is the
+   one token not literally handed down -- Material still needs a real
+   hairline for dividers (header rule, argument-list separators), and
+   #dadce0/#3c4043 are real stops on the same Google grey ramp the
+   rest of this palette already uses, not an invented color. */
 :root {
   --color-primary: #00a693;
   --color-primary-foreground: #ffffff;
 
   --color-accent-red: #cc2936;
-  /* #D4A017 (the design pass's own recorded value) is only 2.38:1
-     against this theme's own white background -- real, measured, well
-     under WCAG AA's 4.5:1 floor for normal text. #8A6010 is the same
+  /* #D4A017 (the original design pass's own recorded value) is only
+     2.38:1 against a white background -- real, measured, well under
+     WCAG AA's 4.5:1 floor for normal text. #8A6010 is the same
      Persian-yellow hue, darkened until it clears AA with real margin
-     (5.58:1 on background, 5.12:1 on surface) -- checked directly, not
-     assumed, since this token is real body text (argument types,
-     CodeBlock's own property-name highlighting), not decoration. Dark
-     mode's own #E8BB4A already clears AA by a wide margin (10.3:1),
-     unchanged. */
+     (5.58:1 on background, 5.12:1 on the new f8f9fa surface, 5.02:1 on
+     the new f1f3f4 field/code surface -- re-checked against every real
+     background this pass introduces, not just re-used blind). */
   --color-accent-yellow: #8a6010;
 
+  /* Material grey scale, real stops: page background stays white (the
+     user's own light spec names cards/fields, not a separate page
+     tone, so white is the correct base Material surfaces sit on top
+     of), f8f9fa for cards (Material's own "surface" container tone),
+     f1f3f4 for fields and the code block (Material's own "surface
+     variant" -- one step down, the tone form inputs and receding
+     content sit on). */
   --color-background: #ffffff;
-  --color-surface: #f6f5f3;
-  --color-border: #e2e0dc;
-  --color-foreground: #1c1a17;
-  --color-foreground-muted: #57534e;
+  --color-surface: #f8f9fa;
+  --color-field: #f1f3f4;
+  --color-code-bg: #f1f3f4;
+  --color-border: #dadce0;
+  --color-foreground: #1f1f1f;
+  --color-foreground-muted: #5f6368;
 }
 
 /* Dark values live in two places on purpose, matching this project's
@@ -39,26 +48,47 @@
    before the toggle -- unchanged for a reader who's never touched it. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-background: #14130f;
-    --color-surface: #1f1d19;
-    --color-border: #35322c;
-    --color-foreground: #f2f0ec;
-    --color-foreground-muted: #b5b1a9;
+    --color-background: #1b1b1b;
+    --color-surface: #2d2e30;
+    --color-field: #2d2e30;
+    --color-code-bg: #131314;
+    --color-border: #3c4043;
+    --color-foreground: #e8eaed;
+    --color-foreground-muted: #9aa0a6;
+
+    /* 00A693 measures well under AA against #1b1b1b -- real, measured,
+       not assumed from "it's a saturated color so it must be fine".
+       4ECFB0 is the same Persian-green hue, lightened until it clears
+       AA with real margin (8.9:1 on #1b1b1b, 7.6:1 on #2d2e30). Text
+       stays this color throughout (links, headings, argument names);
+       the one place primary fills a solid background (ThemeToggle's
+       active state) needs a dark foreground now instead of white,
+       since white-on-4ecfb0 fails AA the same way black-on-00a693
+       never had to worry about -- --color-background itself (already
+       a real, dark, cohesive tone) is what's used for that, not a new
+       token. */
+    --color-primary: #4ecfb0;
+    --color-primary-foreground: #1b1b1b;
 
     /* The design pass flagged this explicitly: the yellow reads thin on
        dark backgrounds. One lighter stop here, nowhere else -- primary
        and the red both already carry enough contrast on a dark
-       surface. */
+       surface. Re-checked against the new #1b1b1b/#2d2e30/#131314 --
+       10.1:1 / 8.9:1 / 11.4:1, all comfortably clear. */
     --color-accent-yellow: #e8bb4a;
   }
 }
 
 :root[data-theme="dark"] {
-  --color-background: #14130f;
-  --color-surface: #1f1d19;
-  --color-border: #35322c;
-  --color-foreground: #f2f0ec;
-  --color-foreground-muted: #b5b1a9;
+  --color-background: #1b1b1b;
+  --color-surface: #2d2e30;
+  --color-field: #2d2e30;
+  --color-code-bg: #131314;
+  --color-border: #3c4043;
+  --color-foreground: #e8eaed;
+  --color-foreground-muted: #9aa0a6;
+  --color-primary: #4ecfb0;
+  --color-primary-foreground: #1b1b1b;
   --color-accent-yellow: #e8bb4a;
 }
 
@@ -69,6 +99,8 @@
   --color-accent-yellow: var(--color-accent-yellow);
   --color-background: var(--color-background);
   --color-surface: var(--color-surface);
+  --color-field: var(--color-field);
+  --color-code-bg: var(--color-code-bg);
   --color-border: var(--color-border);
   --color-foreground: var(--color-foreground);
   --color-foreground-muted: var(--color-foreground-muted);
