@@ -1,9 +1,9 @@
+import { FieldSection, MAX_DEPTH_DATA_SOURCE, MAX_DEPTH_RESOURCE } from "./FieldTree";
 import { LanguageTabs } from "./LanguageTabs";
 import { ProviderSidebar } from "./ProviderSidebar";
-import { RequiredBadge } from "./RequiredBadge";
 import { VersionSelector } from "./VersionSelector";
 import type { ResourceDetail } from "@/lib/docs";
-import { fieldDescription, formatFieldType } from "@/lib/docs";
+import { splitDataSourceFields, splitResourceFields } from "@/lib/docs";
 
 export function ResourceDetailView({
   provider,
@@ -65,34 +65,59 @@ export function ResourceDetailView({
             </div>
           </section>
 
-          <section className="mt-8">
-            <h2
-              id="arguments"
-              className="text-sm font-semibold uppercase tracking-wide text-foreground-muted"
-            >
-              {detail.isDataSource ? "Lookup arguments" : "Arguments"}
-            </h2>
-            <dl className="mt-3 divide-y divide-border">
-              {detail.fields.map((f) => {
-                const desc =
-                  f.Description || fieldDescription(provider, version, detail.wireType, f.WireName);
-                return (
-                  <div key={f.WireName} id={`arg-${f.WireName}`} className="py-3">
-                    <dt className="flex items-center gap-2">
-                      <span className="font-mono-tabular text-sm font-medium text-primary">
-                        {f.WireName}
-                      </span>
-                      <span className="text-xs text-accent-yellow">{formatFieldType(f.Type)}</span>
-                      {f.Required && <RequiredBadge />}
-                    </dt>
-                    <dd className="mt-1 text-sm leading-relaxed text-foreground">
-                      {desc || <span className="text-foreground-muted">No description available.</span>}
-                    </dd>
-                  </div>
-                );
-              })}
-            </dl>
-          </section>
+          {detail.isDataSource ? (
+            (() => {
+              const { lookup, result } = splitDataSourceFields(detail.fields);
+              return (
+                <>
+                  <FieldSection
+                    title="Lookup arguments"
+                    headingId="arguments"
+                    fields={lookup}
+                    provider={provider}
+                    version={version}
+                    wireType={detail.wireType}
+                    maxDepth={MAX_DEPTH_DATA_SOURCE}
+                  />
+                  <FieldSection
+                    title="Result properties"
+                    fields={result}
+                    provider={provider}
+                    version={version}
+                    wireType={detail.wireType}
+                    maxDepth={MAX_DEPTH_DATA_SOURCE}
+                  />
+                </>
+              );
+            })()
+          ) : (
+            (() => {
+              const { input, output, hasRealOutputSplit } = splitResourceFields(detail.fields);
+              return (
+                <>
+                  <FieldSection
+                    title={hasRealOutputSplit ? "Input properties" : "Properties"}
+                    headingId="arguments"
+                    fields={input}
+                    provider={provider}
+                    version={version}
+                    wireType={detail.wireType}
+                    maxDepth={MAX_DEPTH_RESOURCE}
+                  />
+                  {hasRealOutputSplit && (
+                    <FieldSection
+                      title="Output properties"
+                      fields={output}
+                      provider={provider}
+                      version={version}
+                      wireType={detail.wireType}
+                      maxDepth={MAX_DEPTH_RESOURCE}
+                    />
+                  )}
+                </>
+              );
+            })()
+          )}
         </div>
       </div>
     </main>
