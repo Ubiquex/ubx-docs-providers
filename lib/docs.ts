@@ -57,7 +57,7 @@ export function versionExists(providerKey: string, version: string): boolean {
   return existsSync(join(versionDir(providerKey, version), "manifest.json"));
 }
 
-type FieldType = {
+export type FieldType = {
   Kind: number;
   Scalar: number;
   Element: FieldType | null;
@@ -174,6 +174,87 @@ export function formatFieldType(t: Field["Type"]): string {
     default:
       return "unknown";
   }
+}
+
+const KIND_LIST = 2;
+const KIND_SET = 3;
+const KIND_MAP = 4;
+const KIND_OBJECT = 5;
+
+// isObjectIsh/objectFieldsOf/fieldShapeSignature port ubiquex-docs's own
+// real Mintlify generator logic (gen_provider_docs.py) verbatim rather
+// than reinvent it -- that generator is what produced the nested,
+// collapsible field trees this site is matching. True for an object
+// type directly, or a list/set/map whose own Element is an object --
+// Mintlify's pages already expand one level of container to reach the
+// object underneath (e.g. `tags: list(object)` expands straight to
+// its object's own fields, not to a meaningless "list" wrapper).
+export function isObjectIsh(t: FieldType): boolean {
+  if (t.Kind === KIND_OBJECT) return true;
+  if ((t.Kind === KIND_LIST || t.Kind === KIND_SET || t.Kind === KIND_MAP) && t.Element?.Kind === KIND_OBJECT) {
+    return true;
+  }
+  return false;
+}
+
+export function objectFieldsOf(t: FieldType): Field[] {
+  if (t.Kind === KIND_OBJECT) return t.Object ?? [];
+  if ((t.Kind === KIND_LIST || t.Kind === KIND_SET || t.Kind === KIND_MAP) && t.Element) {
+    return t.Element.Object ?? [];
+  }
+  return [];
+}
+
+// A cheap structural signature (sorted immediate child names) used to
+// tell a genuine self-reference (the same object type recurring, real
+// cycle) from an unrelated type that happens to share a field name --
+// same real distinction ubiquex-docs's own field_shape_signature makes,
+// confirmed there against 486 real false positives before it existed.
+export function fieldShapeSignature(t: FieldType): string {
+  return objectFieldsOf(t)
+    .map((f) => f.WireName)
+    .sort()
+    .join(",");
+}
+
+// Same real classification ubiquex-docs's own eff_flags uses: a field
+// with all three of Required/Optional/Computed false (seen in the real
+// corpus) counts as effectively both optional and computed, so it
+// still lands somewhere rather than vanishing from both sections.
+function effFlags(f: Field): { effOptional: boolean; effComputed: boolean } {
+  const allFalse = !f.Required && !f.Optional && !f.Computed;
+  return { effOptional: f.Optional || allFalse, effComputed: f.Computed || allFalse };
+}
+
+export type ResourceFieldSplit = { input: Field[]; output: Field[]; hasRealOutputSplit: boolean };
+
+// Matches gen_provider_docs.py's own real split, found-in-review (UBI-
+// 175 Phase 6): a resource where nearly every field is BOTH Optional
+// and Computed at once (a real, accurate reflection of some providers'
+// own shared request/response schema, e.g. Datadog's monitor) would
+// otherwise get an "Output properties" section that's a pure subset of
+// Input, telling a reader nothing they didn't just read once. Only
+// fields Output has that Input genuinely doesn't (output-only) earn a
+// real, separate section.
+export function splitResourceFields(fields: Field[]): ResourceFieldSplit {
+  const byName = (a: Field, b: Field) => a.WireName.localeCompare(b.WireName);
+  const input = fields.filter((f) => f.Required || effFlags(f).effOptional).sort(byName);
+  const output = fields.filter((f) => effFlags(f).effComputed).sort(byName);
+  const inputNames = new Set(input.map((f) => f.WireName));
+  const hasRealOutputSplit = output.some((f) => !inputNames.has(f.WireName));
+  return { input, output, hasRealOutputSplit };
+}
+
+export type DataSourceFieldSplit = { lookup: Field[]; result: Field[] };
+
+// Data sources always split, no collapse logic -- matches
+// gen_data_source_pages.py's own real, simpler rule exactly (Required
+// or not-Computed is a lookup argument, Computed is a result).
+export function splitDataSourceFields(fields: Field[]): DataSourceFieldSplit {
+  const byName = (a: Field, b: Field) => a.WireName.localeCompare(b.WireName);
+  const lookup = fields.filter((f) => f.Required || !f.Computed).sort(byName);
+  const result = fields.filter((f) => f.Computed).sort(byName);
+  return { lookup, result };
 }
 
 // getResourceOrDataSource is the one shared lookup both getResource and
