@@ -34,7 +34,7 @@ export function LanguageTabs({ examples }: { examples: Record<Lang, string> }) {
           tabs no longer changes the block's height and shifts content
           below it. Inactive tabs stay in the layout (invisible, not
           hidden) purely so their height still counts toward that max. */}
-      <div className="pt-3 grid">
+      <div className="pt-3 grid grid-cols-1">
         {langs.map((lang) => (
           <div
             key={lang}
