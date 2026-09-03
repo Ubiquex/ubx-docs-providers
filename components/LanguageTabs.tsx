@@ -29,21 +29,31 @@ export function LanguageTabs({ examples }: { examples: Record<Lang, string> }) {
           </button>
         ))}
       </div>
-      {/* All tabs render at once, stacked in the same grid cell, so the
-          container's own height sizes to the tallest one -- switching
-          tabs no longer changes the block's height and shifts content
-          below it. Inactive tabs stay in the layout (invisible, not
-          hidden) purely so their height still counts toward that max. */}
-      <div className="pt-3 grid grid-cols-1">
-        {langs.map((lang) => (
-          <div
-            key={lang}
-            className={"col-start-1 row-start-1 min-w-0 " + (lang === active ? "visible" : "invisible")}
-            aria-hidden={lang !== active}
-          >
-            <CodeBlock code={examples[lang]} lang={lang} />
-          </div>
-        ))}
+      {/* Height reservoir: all three panes stacked in one grid cell,
+          purely to size the container to the tallest one so switching
+          tabs never shifts content below it. Always invisible, never
+          the interactive element -- confirmed real, documented Safari
+          behavior is that toggling only `visibility` on an otherwise
+          unchanged box (same position, same dimensions) can fail to
+          repaint, and each pane's own overflow-x-auto additionally
+          establishes its own stacking context, a second real, reported
+          WebKit CSS Grid inconsistency on top of the first. Rather
+          than chase the exact mechanism, the actual displayed pane
+          below is a single, ordinary, un-stacked element instead --
+          switching tabs mounts/unmounts it like any other conditional
+          render, with no overlapping siblings and no visibility
+          toggle in the interactive path at all. */}
+      <div className="relative pt-3">
+        <div className="invisible grid grid-cols-1" aria-hidden="true">
+          {langs.map((lang) => (
+            <div key={lang} className="col-start-1 row-start-1 min-w-0">
+              <CodeBlock code={examples[lang]} lang={lang} />
+            </div>
+          ))}
+        </div>
+        <div className="absolute inset-0 min-w-0">
+          <CodeBlock code={examples[active]} lang={active} />
+        </div>
       </div>
     </div>
   );

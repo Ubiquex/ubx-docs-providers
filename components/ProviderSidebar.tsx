@@ -48,10 +48,16 @@ export function ProviderSidebar({
   providerKey,
   version,
   current,
+  className = "hidden lg:block",
 }: {
   providerKey: string;
   version: string;
   current?: { service: string; localName: string; isDataSource: boolean };
+  // Desktop rail (default) is hidden below lg -- the mobile drawer
+  // renders this same component with "block" instead, since the
+  // drawer's own open/closed state (not a breakpoint) controls
+  // visibility there.
+  className?: string;
 }) {
   const [data, setData] = useState<SidebarData | null>(null);
   const [query, setQuery] = useState("");
@@ -159,7 +165,7 @@ export function ProviderSidebar({
   const uncategorized = coverage ? coverage.total - coverage.categorized : 0;
 
   return (
-    <nav className="hidden lg:block">
+    <nav className={className}>
       {coverage && (
         <p className="mb-2 text-xs text-foreground-muted">
           {coverage.categorized} of {coverage.total} resources and data sources carry a real

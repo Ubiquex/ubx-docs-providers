@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Header } from "@/components/Header";
+import { MobileSidebarToggle } from "@/components/MobileSidebarToggle";
 import { TierBadge } from "@/components/TierBadge";
 import { LanguageTabs } from "@/components/LanguageTabs";
 import { ProviderSidebar } from "@/components/ProviderSidebar";
@@ -28,7 +29,7 @@ export default async function ProviderHomePage({
 
   return (
     <>
-      <Header />
+      <Header mobileMenu={<MobileSidebarToggle providerKey={provider} version={version} />} />
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
           <ProviderSidebar providerKey={provider} version={version} />
