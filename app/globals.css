@@ -148,7 +148,14 @@ html {
   /* Page heights vary widely across this site (a short landing page vs.
      a resource page with dozens of fields) -- without this, the
      vertical scrollbar toggling on and off between navigations shifts
-     the whole viewport width by the scrollbar's own size. */
+     the whole viewport width by the scrollbar's own size.
+     scrollbar-gutter only takes effect on an element whose overflow-y
+     is auto/scroll/hidden, never on the initial value of visible --
+     confirmed against the spec, not assumed. html scrolls the page
+     either way through the browser's own root-scroller behavior, so
+     this was silently a no-op without the explicit overflow-y below,
+     present in the compiled CSS and fully supported, doing nothing. */
+  overflow-y: auto;
   scrollbar-gutter: stable;
 }
 
