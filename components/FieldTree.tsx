@@ -55,8 +55,22 @@ function FieldRow({
         {desc || <span className="text-foreground-muted">No description available.</span>}
       </dd>
       {nested.length > 0 && (
-        <details className="mt-2 ml-1 border-l border-border pl-4">
-          <summary className="cursor-pointer text-xs font-medium text-foreground-muted hover:text-primary">
+        <details className="group mt-2 ml-1 border-l border-border pl-4">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded px-2 py-1.5 text-sm font-medium text-foreground-muted [&::-webkit-details-marker]:hidden hover:bg-surface hover:text-primary">
+            <svg
+              viewBox="0 0 16 16"
+              className="h-3 w-3 shrink-0 transition-transform group-open:rotate-90"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M6 4l4 4-4 4"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
             {nested.length} propert{nested.length === 1 ? "y" : "ies"}
           </summary>
           {isCycle ? (
@@ -114,7 +128,7 @@ export function FieldSection({
   if (fields.length === 0) return null;
   return (
     <section className="mt-8">
-      <h2 id={headingId} className="text-sm font-semibold uppercase tracking-wide text-foreground-muted">
+      <h2 id={headingId} className="text-lg font-semibold text-foreground">
         {title}
       </h2>
       <dl className="mt-3 divide-y divide-border">
