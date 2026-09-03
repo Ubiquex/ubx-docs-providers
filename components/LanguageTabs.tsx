@@ -29,8 +29,21 @@ export function LanguageTabs({ examples }: { examples: Record<Lang, string> }) {
           </button>
         ))}
       </div>
-      <div className="pt-3">
-        <CodeBlock code={examples[active]} lang={active} />
+      {/* All tabs render at once, stacked in the same grid cell, so the
+          container's own height sizes to the tallest one -- switching
+          tabs no longer changes the block's height and shifts content
+          below it. Inactive tabs stay in the layout (invisible, not
+          hidden) purely so their height still counts toward that max. */}
+      <div className="pt-3 grid">
+        {langs.map((lang) => (
+          <div
+            key={lang}
+            className={"col-start-1 row-start-1 " + (lang === active ? "visible" : "invisible")}
+            aria-hidden={lang !== active}
+          >
+            <CodeBlock code={examples[lang]} lang={lang} />
+          </div>
+        ))}
       </div>
     </div>
   );

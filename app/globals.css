@@ -106,6 +106,14 @@
   --color-foreground-muted: var(--color-foreground-muted);
 }
 
+html {
+  /* Page heights vary widely across this site (a short landing page vs.
+     a resource page with dozens of fields) -- without this, the
+     vertical scrollbar toggling on and off between navigations shifts
+     the whole viewport width by the scrollbar's own size. */
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);
