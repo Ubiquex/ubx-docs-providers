@@ -43,7 +43,7 @@
       "description": "Real repos, teams, and org configuration as GitHub's own REST API exposes it.",
       "repo": "ubiquex/ubx-sdk-github",
       "tier": "official",
-      "versions": ["1.2.0", "1.2.1", "1.2.2"]
+      "versions": ["1.2.0", "1.2.1", "1.2.2", "1.2.3"]
     },
     "digitalocean": {
       "name": "DigitalOcean",
