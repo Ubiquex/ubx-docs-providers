@@ -17,6 +17,14 @@ export type ProviderConfig = {
   tier: "official" | "verified" | "community";
   versions: string[];
   goModule?: string;
+  // Set only for a provider whose own upstream spec marks read-only
+  // fields in prose rather than with a structural keyword (OpenAPI's
+  // own `readOnly: true`, or equivalent) -- splitResourceFields can
+  // never earn such a field a real Output-properties section, since
+  // nothing in the spec told the translator it's server-only. Shown on
+  // every resource page that falls back to a single Properties section,
+  // so a reader knows that's a real source limitation, not missing data.
+  outputCaveat?: string;
 };
 
 export function listProviders(): Record<string, ProviderConfig> {

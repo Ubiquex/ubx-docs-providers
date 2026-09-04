@@ -3,7 +3,7 @@ import { LanguageTabs } from "./LanguageTabs";
 import { ProviderSidebar } from "./ProviderSidebar";
 import { VersionSelector } from "./VersionSelector";
 import type { ResourceDetail } from "@/lib/docs";
-import { splitDataSourceFields, splitResourceFields } from "@/lib/docs";
+import { getProvider, splitDataSourceFields, splitResourceFields } from "@/lib/docs";
 
 export function ResourceDetailView({
   provider,
@@ -93,6 +93,7 @@ export function ResourceDetailView({
           ) : (
             (() => {
               const { input, output, hasRealOutputSplit } = splitResourceFields(detail.fields);
+              const outputCaveat = getProvider(provider)?.outputCaveat;
               return (
                 <>
                   <FieldSection
@@ -113,6 +114,11 @@ export function ResourceDetailView({
                       wireType={detail.wireType}
                       maxDepth={MAX_DEPTH_RESOURCE}
                     />
+                  )}
+                  {!hasRealOutputSplit && outputCaveat && (
+                    <p className="mt-6 rounded-lg border border-foreground-muted/20 bg-foreground-muted/5 px-4 py-3 text-sm leading-relaxed text-foreground-muted">
+                      {outputCaveat}
+                    </p>
                   )}
                 </>
               );

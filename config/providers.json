@@ -6,7 +6,8 @@
       "description": "Deployments, services, config, and everything else a real cluster runs.",
       "repo": "ubiquex/ubx-sdk-kubernetes",
       "tier": "official",
-      "versions": ["1.0.0", "1.1.0", "1.1.1"]
+      "versions": ["1.0.0", "1.1.0", "1.1.1"],
+      "outputCaveat": "Kubernetes's own OpenAPI spec marks read-only fields in prose, inside each field's own description text, rather than with a structural readOnly keyword. This reference has no way to detect that from the spec alone, so resources here never show a separate Output properties section, even where real server-set fields exist (for example ObjectMeta's own uid, resourceVersion, and creationTimestamp). This is a limitation of the upstream spec, not missing or broken data."
     },
     "aws": {
       "name": "AWS",
