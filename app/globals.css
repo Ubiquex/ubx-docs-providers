@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* Tailwind v4 auto-detects sources but skips node_modules, so every
+   utility class used only inside @ubx/docs-ui was never generated. This
+   site shipped with the shared header and footer partly unstyled, and
+   diverged from ubx-docs-users because a shared class survived only
+   where the site happened to use it in its own local code too. That is
+   why the "shared" UI produced different results on the two sites. */
+@source "../node_modules/@ubx/docs-ui/dist";
+
 /* Material restyle (design pass, 2026-09-03): real Google Material
    grey-scale neutrals in both themes, Persian green kept as the one
    accent in place of Google's own blue. Persian red and Persian

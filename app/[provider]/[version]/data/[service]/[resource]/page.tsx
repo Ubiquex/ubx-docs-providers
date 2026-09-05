@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
-import { Header } from "@ubx/docs-ui";
-import { NAV } from "@/lib/nav";
-import { MobileSidebarToggle } from "@ubx/docs-ui";
+import { PageShell } from "@ubx/docs-ui";
+import { NAV, FOOTER } from "@/lib/nav";
 import { ProviderSidebar } from "@/components/ProviderSidebar";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
-import { getDataSource, getProvider, listCachedVersions, listProviders, listResources } from "@/lib/docs";
+import {
+  getDataSource,
+  getProvider,
+  listCachedVersions,
+  listProviders,
+  listResources,
+} from "@/lib/docs";
 import { exampleFor } from "@/lib/examples";
 
 // Data sources live under their own /data/ segment, matching the real
@@ -18,12 +23,22 @@ import { exampleFor } from "@/lib/examples";
 // only the import path tells them apart -- the URL has to carry that
 // same distinction or the two would collide.
 export function generateStaticParams() {
-  const params: { provider: string; version: string; service: string; resource: string }[] = [];
+  const params: {
+    provider: string;
+    version: string;
+    service: string;
+    resource: string;
+  }[] = [];
   for (const provider of Object.keys(listProviders())) {
     for (const version of listCachedVersions(provider)) {
       for (const r of listResources(provider, version)) {
         if (!r.isDataSource) continue;
-        params.push({ provider, version, service: r.service, resource: r.localName });
+        params.push({
+          provider,
+          version,
+          service: r.service,
+          resource: r.localName,
+        });
       }
     }
   }
@@ -33,7 +48,12 @@ export function generateStaticParams() {
 export default async function DataSourcePage({
   params,
 }: {
-  params: Promise<{ provider: string; version: string; service: string; resource: string }>;
+  params: Promise<{
+    provider: string;
+    version: string;
+    service: string;
+    resource: string;
+  }>;
 }) {
   const { provider, version, service, resource } = await params;
   const cfg = getProvider(provider);
@@ -43,15 +63,20 @@ export default async function DataSourcePage({
   if (!detail) notFound();
 
   return (
-    <>
-      <Header
-        nav={NAV}
-        mobileMenu={
-          <MobileSidebarToggle>
-            <ProviderSidebar providerKey={provider} version={version} current={{ service, localName: resource, isDataSource: true }} className="block" />
-          </MobileSidebarToggle>
-        }
-      />
+    <PageShell
+      nav={NAV}
+      sidebar={
+        <ProviderSidebar
+          providerKey={provider}
+          version={version}
+          current={{ service, localName: resource, isDataSource: true }}
+          className="block"
+        />
+      }
+      sidebarLabel="Services"
+      searchPlaceholder="Search resources and data sources..."
+      footer={FOOTER}
+    >
       <ResourceDetailView
         provider={provider}
         version={version}
@@ -61,6 +86,6 @@ export default async function DataSourcePage({
         detail={detail}
         examples={exampleFor(provider, version, detail.wireType)}
       />
-    </>
+    </PageShell>
   );
 }

@@ -14,3 +14,17 @@ export const NAV: NavLink[] = [
   { label: "Providers", href: "/" },
   { label: "Blog", href: "https://ubiquex.github.io/ubiquex-web/blog" },
 ];
+
+// Footer identity. Required props since @ubx/docs-ui 0.3.0: the shared
+// Footer used to hardcode exactly this site's tagline, which is how it
+// ended up asserting that the user docs site's hand-written pages were
+// generated from provider schemas.
+export const FOOTER = {
+  tagline: "Reference content is generated from each provider\u2019s own real schema, not hand-written.",
+  links: [
+    { label: "Documentation", href: "https://docs.ubiquex.io" },
+    { label: "GitHub", href: "https://github.com/Ubiquex" },
+    { label: "License", href: "https://github.com/Ubiquex/ubx-docs-providers/blob/main/LICENSE" },
+  ],
+};
+
