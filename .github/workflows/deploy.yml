@@ -1,0 +1,175 @@
+name: deploy
+
+# UBI-240 final slice: deploy the real static export to S3 behind
+# CloudFront. Supersedes the Cloudflare Pages target (PR #5, closed
+# rather than merged -- the measured 2.2GB / 67,924-file export ruled out
+# GitHub Pages and Cloudflare Pages Free, and the target then moved to
+# S3 + CloudFront).
+#
+# Credentials come from GitHub's own OIDC provider, never long-lived
+# keys: this job exchanges its own short-lived OIDC token for
+# arn:aws:iam::839333509514:role/ubx-docs-providers-deploy, whose trust
+# policy is scoped to repo:Ubiquex/ubx-docs-providers:* and whose
+# permissions are scoped to exactly this one bucket and this one
+# distribution.
+#
+# WHY INVALIDATION IS TARGETED, NOT WILDCARD (the real reasoning, since
+# the obvious reading is the opposite):
+#
+# A `/*` invalidation is ONE billable path, not 67,924 -- CloudFront
+# bills per path submitted, wildcards included, with 1,000 free per
+# month. So cost is not the argument against it and never was.
+#
+# The real argument is that this site's content is version-scoped and
+# immutable by construction. Publishing github 1.2.3 writes entirely NEW
+# object keys; new objects were never cached anywhere, so they need no
+# invalidation at all. Only the genuinely mutable surface needs it, and
+# that surface is small and enumerable (below). A `/*` on every deploy
+# would evict all ~68k objects from every edge location to refresh a
+# couple of dozen, forcing a full re-fetch storm for content that did
+# not change.
+#
+# `/*` is kept as a real, deliberate manual escape hatch (the
+# invalidate_all input) for the case that genuinely needs it: a
+# translator-level fix that rewrites EXISTING version content in place,
+# which this project does periodically.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      invalidate_all:
+        description: "Invalidate /* instead of the targeted path list. Use only when a change rewrites existing version content in place."
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  BUCKET: ubx-docs-providers-site
+  DISTRIBUTION_ID: E3KJKVZQPGON0W
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up Deno
+        # build-examples.mjs shells out to `deno fmt` (and to gofmt, which
+        # ubuntu-latest already provides) to format the generated example
+        # snippets. Deno is NOT preinstalled on the runner, and its absence
+        # surfaces as a spawn ENOENT whose own err.stderr is undefined, so
+        # the thrown message reads "deno fmt rejected generated TS source
+        # ... undefined" -- which looks like a formatting rejection rather
+        # than a missing binary. That misdirection is why ci.yml sat red on
+        # every main run from 2026-09-03 onward without being diagnosed.
+        uses: denoland/setup-deno@v2.0.5
+        with:
+          deno-version: "2.x"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the real static export
+        # prebuild runs fetch-docs (downloads and sha256-verifies every
+        # pinned docs release), build-examples, build-search-index and
+        # build-sidebar-index before next build. output: "export" makes
+        # next build emit out/ directly.
+        run: npm run build
+
+      - name: Confirm the export actually produced pages
+        # A build that silently produces an empty or near-empty out/ would
+        # otherwise be synced with --delete and take the live site down.
+        run: |
+          set -euo pipefail
+          test -f out/index.html || { echo "out/index.html missing -- refusing to sync"; exit 1; }
+          count="$(find out -name '*.html' | wc -l | tr -d ' ')"
+          echo "exported HTML pages: $count"
+          if [ "$count" -lt 1000 ]; then
+            echo "only $count HTML pages exported, expected thousands -- refusing to sync a likely-broken build"
+            exit 1
+          fi
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::839333509514:role/ubx-docs-providers-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync immutable hashed assets
+        # Everything under /_next/static carries a content hash in its own
+        # filename, so it is safe to cache forever and is never
+        # invalidated. Done first, so a page HTML referencing a new asset
+        # can never be served before that asset exists.
+        run: |
+          set -euo pipefail
+          aws s3 sync out/ "s3://$BUCKET/" \
+            --exclude '*' --include '_next/static/*' \
+            --cache-control 'public,max-age=31536000,immutable' \
+            --only-show-errors
+
+      - name: Sync everything else
+        # Short TTL, because these are the mutable surface: page HTML, the
+        # per-route RSC navigation payloads (.txt), the search index and
+        # the sidebar trees. --delete runs here, after the guard above.
+        run: |
+          set -euo pipefail
+          aws s3 sync out/ "s3://$BUCKET/" \
+            --exclude '_next/static/*' \
+            --cache-control 'public,max-age=60' \
+            --delete \
+            --only-show-errors
+
+      - name: Invalidate
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.inputs.invalidate_all }}" = "true" ]; then
+            echo "manual escape hatch: invalidating /*"
+            aws cloudfront create-invalidation \
+              --distribution-id "$DISTRIBUTION_ID" --paths '/*' \
+              --query 'Invalidation.Id' --output text
+            exit 0
+          fi
+
+          # The real mutable surface. Everything else this site serves is
+          # version-scoped: publishing a new version writes new keys that
+          # were never cached, so they need nothing here.
+          paths=(
+            '/'
+            '/index.html'
+            '/index.txt'
+            '/404.html'
+            '/search-index.json'
+            '/__next._tree.txt'
+            '/__next._full.txt'
+            '/sidebar/*'
+          )
+          # Provider landing pages list their own version set, so each one
+          # changes whenever a version is added to it. Derived from the
+          # real committed config rather than hardcoded, so a newly
+          # onboarded provider is covered without editing this workflow.
+          while read -r p; do
+            paths+=("/$p.html" "/$p.txt")
+          done < <(python3 -c "import json;print('\n'.join(json.load(open('config/providers.json'))['providers'].keys()))")
+
+          echo "invalidating ${#paths[@]} targeted paths:"
+          printf '  %s\n' "${paths[@]}"
+          aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" --paths "${paths[@]}" \
+            --query 'Invalidation.Id' --output text

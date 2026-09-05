@@ -1,5 +1,9 @@
 import { notFound, redirect } from "next/navigation";
-import { getProvider, latestVersion } from "@/lib/docs";
+import { getProvider, latestVersion, listProviders } from "@/lib/docs";
+
+export function generateStaticParams() {
+  return Object.keys(listProviders()).map((provider) => ({ provider }));
+}
 
 // A bare /kubernetes redirects to its latest configured version -- each
 // version is its own real page, UBI-240's own explicit URL contract.
