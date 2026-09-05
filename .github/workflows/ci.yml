@@ -43,6 +43,12 @@ jobs:
       - name: lint
         run: npm run lint
 
+      - name: test
+        # infra/cloudfront/rewrite.js is live in production and its source
+        # lives here, so it is gated here too. Runs in plain node, no AWS
+        # call and no credentials.
+        run: npm test
+
       - name: build
         env:
           GITHUB_TOKEN: ${{ github.token }}

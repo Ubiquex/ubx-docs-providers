@@ -1,0 +1,164 @@
+name: function-publish
+
+# Publishes infra/cloudfront/rewrite.js to the live CloudFront Function.
+#
+# DELIBERATELY SEPARATE FROM deploy.yml, and deliberately manual-only.
+#
+# A content deploy is safe by construction: it writes new, version-scoped
+# object keys and invalidates about twenty genuinely-mutable paths. A
+# function change is the opposite. It sits in front of every request to
+# every path, so getting it wrong takes the whole site down rather than
+# one page, which is exactly what happened when the first version of this
+# function 404'd every version landing page. Coupling a total-blast-radius
+# change to a trigger that fires on every push to main would ship a typo
+# in a regex alongside a routine docs update, with no separate decision.
+#
+# It also forces the one case that genuinely warrants a wildcard
+# invalidation. A function change affects every cached path, so this runs
+# `/*`, which deploy.yml specifically avoids on the routine path.
+#
+# The tests run here too, not just in CI, so this cannot publish a
+# function that fails its own cases even if dispatched from a branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type the function name to confirm: ubx-docs-providers-rewrite"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  FUNCTION_NAME: ubx-docs-providers-rewrite
+  DISTRIBUTION_ID: E3KJKVZQPGON0W
+  AWS_REGION: us-east-1
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm the operator typed the function name
+        # A dispatch button is one click. This is a site-wide change, so it
+        # takes one deliberate act rather than one accidental one.
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event.inputs.confirm }}" != "$FUNCTION_NAME" ]; then
+            echo "confirmation did not match: expected '$FUNCTION_NAME'"
+            exit 1
+          fi
+
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Test the function before publishing anything
+        # Plain node, no AWS. Reads rewrite.js itself, so what is tested is
+        # the exact bytes about to be uploaded.
+        run: node --test infra/cloudfront/rewrite.test.mjs
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::839333509514:role/ubx-docs-providers-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Show what will change
+        run: |
+          set -euo pipefail
+          aws cloudfront get-function --name "$FUNCTION_NAME" --stage LIVE /tmp/live.js
+          if diff -u /tmp/live.js infra/cloudfront/rewrite.js; then
+            echo "Deployed function already matches the committed source. Nothing to publish."
+            echo "NOOP=true" >> "$GITHUB_ENV"
+          else
+            echo "The diff above is what this run will publish."
+          fi
+
+      - name: Update the function
+        if: env.NOOP != 'true'
+        run: |
+          set -euo pipefail
+          etag="$(aws cloudfront describe-function --name "$FUNCTION_NAME" --query ETag --output text)"
+          aws cloudfront update-function \
+            --name "$FUNCTION_NAME" --if-match "$etag" \
+            --function-config Comment="Append .html for extensionless routes (Next static export)",Runtime=cloudfront-js-2.0 \
+            --function-code "fileb://infra/cloudfront/rewrite.js" \
+            --query 'FunctionSummary.FunctionMetadata.Stage' --output text
+
+      - name: Verify the DEVELOPMENT stage against the same cases before going live
+        if: env.NOOP != 'true'
+        # test-function exercises the real uploaded code inside CloudFront,
+        # which the local node tests cannot do. Belt and braces, because the
+        # blast radius is the entire site.
+        run: |
+          set -euo pipefail
+          etag="$(aws cloudfront describe-function --name "$FUNCTION_NAME" --query ETag --output text)"
+          fail=0
+          check() {
+            local uri="$1" expected="$2"
+            cat > /tmp/ev.json <<JSON
+          {"version":"1.0","context":{"eventType":"viewer-request"},"viewer":{"ip":"1.2.3.4"},
+           "request":{"method":"GET","uri":"$uri","headers":{},"cookies":{},"querystring":{}}}
+          JSON
+            got="$(aws cloudfront test-function \
+              --name "$FUNCTION_NAME" --if-match "$etag" --stage DEVELOPMENT \
+              --event-object fileb:///tmp/ev.json --output json \
+              | python3 -c 'import json,sys; print(json.loads(json.load(sys.stdin)["TestResult"]["FunctionOutput"])["request"]["uri"])')"
+            if [ "$got" != "$expected" ]; then
+              echo "FAIL $uri -> $got (expected $expected)"
+              fail=1
+            else
+              echo "ok   $uri -> $got"
+            fi
+          }
+          # The bare version path first: this is the case the original
+          # eight missed and that 404'd the whole version-page surface.
+          check "/github/1.2.3"                      "/github/1.2.3.html"
+          check "/aws/2.2.1"                         "/aws/2.2.1.html"
+          check "/"                                  "/index.html"
+          check "/github"                            "/github.html"
+          check "/github/1.2.3/"                     "/github/1.2.3.html"
+          check "/github/1.2.3/data/build/build"     "/github/1.2.3/data/build/build.html"
+          check "/github/1.2.3/data/build/build.txt" "/github/1.2.3/data/build/build.txt"
+          check "/_next/static/chunks/abc.js"        "/_next/static/chunks/abc.js"
+          check "/search-index.json"                 "/search-index.json"
+          check "/sidebar/github/1.2.3.json"         "/sidebar/github/1.2.3.json"
+          check "/logos/aws.svg"                     "/logos/aws.svg"
+          check "/404"                               "/404.html"
+          [ "$fail" -eq 0 ] || { echo "refusing to publish: DEVELOPMENT stage failed its own cases"; exit 1; }
+
+      - name: Publish to LIVE
+        if: env.NOOP != 'true'
+        run: |
+          set -euo pipefail
+          etag="$(aws cloudfront describe-function --name "$FUNCTION_NAME" --query ETag --output text)"
+          aws cloudfront publish-function \
+            --name "$FUNCTION_NAME" --if-match "$etag" \
+            --query 'FunctionSummary.FunctionMetadata.Stage' --output text
+
+      - name: Invalidate everything
+        if: env.NOOP != 'true'
+        # The one case that genuinely warrants the wildcard: a function
+        # change affects how every cached path was resolved, so every
+        # cached path is suspect. deploy.yml avoids /* precisely because
+        # the routine path does not have this property.
+        run: |
+          set -euo pipefail
+          aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" --paths '/*' \
+            --query 'Invalidation.Id' --output text
+
+      - name: Confirm LIVE now matches the committed source
+        if: env.NOOP != 'true'
+        run: |
+          set -euo pipefail
+          aws cloudfront get-function --name "$FUNCTION_NAME" --stage LIVE /tmp/after.js
+          diff -u infra/cloudfront/rewrite.js /tmp/after.js
+          echo "LIVE is byte-identical to the committed source."

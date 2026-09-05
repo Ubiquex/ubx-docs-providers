@@ -1,0 +1,142 @@
+name: function-drift-watch
+
+# Makes infra/cloudfront/rewrite.js ACTUALLY authoritative rather than
+# nominally so.
+#
+# The function is live in front of every request to every path on this
+# site. It was created directly with the AWS CLI and for a while existed
+# in no repository at all, which is how it shipped a bug that 404'd every
+# version landing page in production with nothing to review and nothing
+# to test against. Committing the source fixed the reviewability half.
+# This closes the other half: nothing otherwise notices if the deployed
+# function and the committed source stop matching.
+#
+# Read-only by construction. It pulls the LIVE function and diffs it. It
+# never updates, never publishes, never invalidates. Publishing is a
+# separate, manual-only workflow (function-publish.yml) precisely because
+# a function change has site-wide blast radius and deserves an explicit
+# decision.
+#
+# WHY THIS DOES NOT RUN ON pull_request, which looks like the obvious
+# trigger and is wrong here: a PR that legitimately changes
+# rewrite.js is SUPPOSED to differ from what is currently deployed. That
+# is the whole point of the PR. Running drift on PRs would fail every
+# such PR for doing exactly what it intends, and would train everyone to
+# ignore the check. Drift is a property of `main` against AWS, not of a
+# branch, so it runs on main, on a schedule, and on demand.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "infra/cloudfront/rewrite.js"
+      - ".github/workflows/function-drift-watch.yml"
+  schedule:
+    # Weekly, Wednesday 07:00 UTC. Offset from the sibling repos' own
+    # Monday hash-watch and Tuesday translator-watch so the org's
+    # scheduled checks do not all land together.
+    - cron: "0 7 * * 3"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+env:
+  FUNCTION_NAME: ubx-docs-providers-rewrite
+  AWS_REGION: us-east-1
+  DRIFT_ISSUE_LABEL: function-drift
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::839333509514:role/ubx-docs-providers-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Compare the deployed function against the committed source
+        id: drift
+        run: |
+          set -euo pipefail
+          aws cloudfront get-function \
+            --name "$FUNCTION_NAME" --stage LIVE /tmp/live.js
+
+          if diff -u infra/cloudfront/rewrite.js /tmp/live.js > /tmp/drift.diff; then
+            echo "state=clean" >> "$GITHUB_OUTPUT"
+            echo "Deployed function is byte-identical to infra/cloudfront/rewrite.js."
+          else
+            echo "state=drift" >> "$GITHUB_OUTPUT"
+            echo "REAL DRIFT between the committed source and the deployed function:"
+            cat /tmp/drift.diff
+            {
+              echo 'diff<<DIFFEOF'
+              cat /tmp/drift.diff
+              echo DIFFEOF
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find any existing drift issue
+        id: existing
+        if: steps.drift.outputs.state == 'drift'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          n="$(gh issue list --label "$DRIFT_ISSUE_LABEL" --state open --json number --jq '.[0].number // empty')"
+          echo "number=$n" >> "$GITHUB_OUTPUT"
+
+      - name: Surface the drift
+        if: steps.drift.outputs.state == 'drift'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          run_url="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          body="**The deployed CloudFront Function no longer matches \`infra/cloudfront/rewrite.js\`.**
+
+          This function sits in front of every request to every path on the
+          site, so a mismatch means the repo is not describing what is
+          actually serving.
+
+          \`\`\`diff
+          ${{ steps.drift.outputs.diff }}
+          \`\`\`
+
+          Left (\`-\`) is the committed source. Right (\`+\`) is what is
+          deployed.
+
+          To resolve, either publish the committed source through
+          \`function-publish.yml\`, or commit the deployed change if it was
+          intentional and made out of band.
+
+          Full run: $run_url"
+
+          if [ -n "${{ steps.existing.outputs.number }}" ]; then
+            gh issue comment "${{ steps.existing.outputs.number }}" --body "$body"
+          else
+            gh issue create \
+              --title "CloudFront Function has drifted from the committed source" \
+              --label "$DRIFT_ISSUE_LABEL" --body "$body"
+          fi
+
+      - name: Close a stale drift issue once they match again
+        if: steps.drift.outputs.state == 'clean'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          n="$(gh issue list --label "$DRIFT_ISSUE_LABEL" --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$n" ]; then
+            gh issue close "$n" --comment "Deployed function is byte-identical to the committed source again. Closing."
+          fi
+
+      - name: Fail the run on drift, so it is never a silent green
+        if: steps.drift.outputs.state == 'drift'
+        run: exit 1

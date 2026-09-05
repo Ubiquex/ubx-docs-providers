@@ -11,7 +11,8 @@
     "prebuild": "npm run fetch-docs && npm run build-examples && npm run build-search-index && npm run build-sidebar-index",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node --test infra/cloudfront/rewrite.test.mjs"
   },
   "dependencies": {
     "next": "16.3.4",
