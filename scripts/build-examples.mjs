@@ -657,11 +657,29 @@ function formatBatch(entries, ext, formatFn) {
 // this.
 const FMT_MAX_BUFFER = 64 * 1024 * 1024;
 
+// A spawn failure (the formatter is not on PATH at all) and a real
+// formatting rejection are genuinely different problems, and conflating
+// them cost real time: ci.yml never installed Deno, every run from
+// 2026-09-03 onward failed here, and because ENOENT carries no stderr
+// the thrown message read "deno fmt rejected generated TS source ...
+// undefined" -- which reads as though the generated source was bad
+// rather than as a missing binary. Named separately now so the next
+// occurrence says what it actually is.
+function fmtError(tool, dir, lang, err) {
+  if (err.code === "ENOENT") {
+    return new Error(
+      `${tool} is not installed or not on PATH, so generated ${lang} source in ${dir} could not be formatted. ` +
+        `This is a missing-toolchain problem, not a problem with the generated source.`,
+    );
+  }
+  return new Error(`${tool} rejected generated ${lang} source in ${dir}:\n${err.stderr}`);
+}
+
 function gofmtDir(dir) {
   try {
     execFileSync("gofmt", ["-w", dir], { stdio: ["ignore", "pipe", "pipe"], maxBuffer: FMT_MAX_BUFFER });
   } catch (err) {
-    throw new Error(`gofmt rejected generated Go source in ${dir}:\n${err.stderr}`);
+    throw fmtError("gofmt", dir, "Go", err);
   }
 }
 
@@ -672,7 +690,7 @@ function denoFmtDir(dir) {
       maxBuffer: FMT_MAX_BUFFER,
     });
   } catch (err) {
-    throw new Error(`deno fmt rejected generated TS source in ${dir}:\n${err.stderr}`);
+    throw fmtError("deno fmt", dir, "TS", err);
   }
 }
 

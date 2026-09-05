@@ -70,6 +70,19 @@ jobs:
           node-version: "22"
           cache: npm
 
+      - name: Set up Deno
+        # build-examples.mjs shells out to `deno fmt` (and to gofmt, which
+        # ubuntu-latest already provides) to format the generated example
+        # snippets. Deno is NOT preinstalled on the runner, and its absence
+        # surfaces as a spawn ENOENT whose own err.stderr is undefined, so
+        # the thrown message reads "deno fmt rejected generated TS source
+        # ... undefined" -- which looks like a formatting rejection rather
+        # than a missing binary. That misdirection is why ci.yml sat red on
+        # every main run from 2026-09-03 onward without being diagnosed.
+        uses: denoland/setup-deno@v2.0.5
+        with:
+          deno-version: "2.x"
+
       - name: Install dependencies
         run: npm ci
 

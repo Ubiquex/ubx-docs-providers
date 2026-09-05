@@ -28,6 +28,15 @@ jobs:
           node-version: "22.x"
           cache: "npm"
 
+      - name: Set up Deno
+        # Required by build-examples.mjs, which shells out to `deno fmt`.
+        # Missing here since this workflow was written, which is why every
+        # main run from 2026-09-03 onward failed. See deploy.yml's own
+        # copy of this step for why the error message misdirected.
+        uses: denoland/setup-deno@v2.0.5
+        with:
+          deno-version: "2.x"
+
       - name: npm ci
         run: npm ci
 
