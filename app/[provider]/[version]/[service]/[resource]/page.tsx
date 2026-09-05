@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
-import { MobileSidebarToggle } from "@/components/MobileSidebarToggle";
+import { Header } from "@ubx/docs-ui";
+import { NAV } from "@/lib/nav";
+import { MobileSidebarToggle } from "@ubx/docs-ui";
+import { ProviderSidebar } from "@/components/ProviderSidebar";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
 import { getProvider, getResource, listCachedVersions, listProviders, listResources } from "@/lib/docs";
 import { exampleFor } from "@/lib/examples";
@@ -40,12 +42,11 @@ export default async function ResourcePage({
   return (
     <>
       <Header
+        nav={NAV}
         mobileMenu={
-          <MobileSidebarToggle
-            providerKey={provider}
-            version={version}
-            current={{ service, localName: resource, isDataSource: false }}
-          />
+          <MobileSidebarToggle>
+            <ProviderSidebar providerKey={provider} version={version} current={{ service, localName: resource, isDataSource: false }} className="block" />
+          </MobileSidebarToggle>
         }
       />
       <ResourceDetailView
