@@ -45,13 +45,17 @@ function buildEntriesFor(providerKey, providerName, version) {
     // Matches lib/docs.ts's own real fix: categories.json's overrides
     // are keyed WITHOUT the "data_" prefix even for a data source.
     const categoryKey = isDataSource ? wireType.slice("data_".length) : wireType;
+    // UBI-247: emits @ubx/docs-ui's generic SearchEntry shape
+    // (title/subtitle/group/badge/path) rather than this site's own
+    // wire-type record, so one GlobalSearch serves both docs sites.
+    // The mapping is lossless for everything the UI actually rendered:
+    // dottedName was the emphasised text, providerName the dim suffix,
+    // and isDataSource the "data" pill.
     return {
-      provider: providerKey,
-      providerName,
-      wireType,
-      dottedName,
-      category: categories.overrides[categoryKey]?.label ?? entry.service,
-      isDataSource,
+      title: dottedName,
+      subtitle: providerName,
+      group: categories.overrides[categoryKey]?.label ?? entry.service,
+      badge: isDataSource ? "data" : undefined,
       path,
     };
   });

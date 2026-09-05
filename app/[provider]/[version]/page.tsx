@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Header } from "@/components/Header";
-import { MobileSidebarToggle } from "@/components/MobileSidebarToggle";
+import { Header } from "@ubx/docs-ui";
+import { NAV } from "@/lib/nav";
+import { MobileSidebarToggle } from "@ubx/docs-ui";
 import { TierBadge } from "@/components/TierBadge";
 import { LanguageTabs } from "@/components/LanguageTabs";
 import { ProviderSidebar } from "@/components/ProviderSidebar";
@@ -29,7 +30,9 @@ export default async function ProviderHomePage({
 
   return (
     <>
-      <Header mobileMenu={<MobileSidebarToggle providerKey={provider} version={version} />} />
+      <Header nav={NAV} mobileMenu={<MobileSidebarToggle>
+            <ProviderSidebar providerKey={provider} version={version} className="block" />
+          </MobileSidebarToggle>} />
       <main className="mx-auto w-full max-w-7xl px-6 py-8">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[280px_1fr]">
           <ProviderSidebar providerKey={provider} version={version} />

@@ -1,5 +1,6 @@
-import { Header } from "@/components/Header";
-import { GlobalSearch } from "@/components/GlobalSearch";
+import { Header } from "@ubx/docs-ui";
+import { NAV } from "@/lib/nav";
+import { GlobalSearch } from "@ubx/docs-ui";
 import { ProviderCard } from "@/components/ProviderCard";
 import { TierLegend } from "@/components/TierLegend";
 import { getManifest, latestVersion, listProviders } from "@/lib/docs";
@@ -22,7 +23,7 @@ export default function HomePage() {
 
   return (
     <>
-      <Header />
+      <Header nav={NAV} />
       <main className="mx-auto w-full max-w-7xl px-6 py-12">
         <h1 className="text-center text-4xl font-medium text-foreground">
           Provider reference for <span className="text-primary">ubx</span>
@@ -33,7 +34,10 @@ export default function HomePage() {
         </p>
 
         <div className="mx-auto mt-8 max-w-xl">
-          <GlobalSearch />
+          <GlobalSearch
+            placeholder="Search resources and data sources..."
+            inputClassName="w-full rounded-full bg-field px-5 py-3 text-base text-foreground outline-none placeholder:text-foreground-muted focus:ring-2 focus:ring-primary/30"
+          />
         </div>
 
         <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
