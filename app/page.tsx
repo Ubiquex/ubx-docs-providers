@@ -21,25 +21,31 @@ export default function HomePage() {
   });
 
   return (
+    // Hero search on the landing page, header search everywhere else.
+    // The previous change moved this site's hero box into the header so
+    // that search existed on more than one page. That was right about the
+    // content pages and wrong about this one: on a landing page whose
+    // whole job is "what is here", search is a primary affordance rather
+    // than a tool beside the theme toggle. The shell now renders both
+    // placements, so this page gets the hero back without the content
+    // pages losing anything.
     <PageShell
       nav={NAV}
       searchPlaceholder="Search resources and data sources..."
+      searchPlacement="hero"
       footer={FOOTER}
+      intro={
+        <>
+          <h1 className="text-center text-4xl font-medium text-foreground">
+            Provider reference for <span className="text-primary">ubx</span>
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-center leading-relaxed text-foreground-muted">
+            Resource and data source reference, one page per version, generated
+            straight from each SDK&rsquo;s own real schema.
+          </p>
+        </>
+      }
     >
-      <h1 className="text-center text-4xl font-medium text-foreground">
-        Provider reference for <span className="text-primary">ubx</span>
-      </h1>
-      <p className="mx-auto mt-3 max-w-xl text-center leading-relaxed text-foreground-muted">
-        Resource and data source reference, one page per version, generated
-        straight from each SDK&rsquo;s own real schema.
-      </p>
-
-      {/* The hero search box was here. It moved into the header via
-            PageShell, which puts search on every page of both sites
-            instead of on one page each: this site's home, and the user
-            docs site's section landings, which no longer exist. Leaving
-            it here as well would mean two search boxes on this page. */}
-
       <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {cards.map((c) => (
           <ProviderCard key={c.providerKey} {...c} />
