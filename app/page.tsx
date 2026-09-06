@@ -1,6 +1,5 @@
-import { Header } from "@ubx/docs-ui";
-import { NAV } from "@/lib/nav";
-import { GlobalSearch } from "@ubx/docs-ui";
+import { PageShell } from "@ubx/docs-ui";
+import { NAV, FOOTER } from "@/lib/nav";
 import { ProviderCard } from "@/components/ProviderCard";
 import { TierLegend } from "@/components/TierLegend";
 import { getManifest, latestVersion, listProviders } from "@/lib/docs";
@@ -22,34 +21,34 @@ export default function HomePage() {
   });
 
   return (
-    <>
-      <Header nav={NAV} />
-      <main className="mx-auto w-full max-w-7xl px-6 py-12">
-        <h1 className="text-center text-4xl font-medium text-foreground">
-          Provider reference for <span className="text-primary">ubx</span>
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-center leading-relaxed text-foreground-muted">
-          Resource and data source reference, one page per version, generated straight
-          from each SDK&rsquo;s own real schema.
-        </p>
+    <PageShell
+      nav={NAV}
+      searchPlaceholder="Search resources and data sources..."
+      footer={FOOTER}
+    >
+      <h1 className="text-center text-4xl font-medium text-foreground">
+        Provider reference for <span className="text-primary">ubx</span>
+      </h1>
+      <p className="mx-auto mt-3 max-w-xl text-center leading-relaxed text-foreground-muted">
+        Resource and data source reference, one page per version, generated
+        straight from each SDK&rsquo;s own real schema.
+      </p>
 
-        <div className="mx-auto mt-8 max-w-xl">
-          <GlobalSearch
-            placeholder="Search resources and data sources..."
-            inputClassName="w-full rounded-full bg-field px-5 py-3 text-base text-foreground outline-none placeholder:text-foreground-muted focus:ring-2 focus:ring-primary/30"
-          />
-        </div>
+      {/* The hero search box was here. It moved into the header via
+            PageShell, which puts search on every page of both sites
+            instead of on one page each: this site's home, and the user
+            docs site's section landings, which no longer exist. Leaving
+            it here as well would mean two search boxes on this page. */}
 
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((c) => (
-            <ProviderCard key={c.providerKey} {...c} />
-          ))}
-        </div>
+      <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {cards.map((c) => (
+          <ProviderCard key={c.providerKey} {...c} />
+        ))}
+      </div>
 
-        <div className="mt-12">
-          <TierLegend />
-        </div>
-      </main>
-    </>
+      <div className="mt-12">
+        <TierLegend />
+      </div>
+    </PageShell>
   );
 }

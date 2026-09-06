@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
-import { Header } from "@ubx/docs-ui";
-import { NAV } from "@/lib/nav";
-import { MobileSidebarToggle } from "@ubx/docs-ui";
+import { PageShell } from "@ubx/docs-ui";
+import { NAV, FOOTER } from "@/lib/nav";
 import { ProviderSidebar } from "@/components/ProviderSidebar";
 import { ResourceDetailView } from "@/components/ResourceDetailView";
-import { getProvider, getResource, listCachedVersions, listProviders, listResources } from "@/lib/docs";
+import {
+  getProvider,
+  getResource,
+  listCachedVersions,
+  listProviders,
+  listResources,
+} from "@/lib/docs";
 import { exampleFor } from "@/lib/examples";
 
 // UBI-240 slice 2: every real resource at every real cached version, not
@@ -15,12 +20,22 @@ import { exampleFor } from "@/lib/examples";
 // below, the same honest 404 the version selector relies on. Slice 3:
 // loops every configured provider, not just kubernetes.
 export function generateStaticParams() {
-  const params: { provider: string; version: string; service: string; resource: string }[] = [];
+  const params: {
+    provider: string;
+    version: string;
+    service: string;
+    resource: string;
+  }[] = [];
   for (const provider of Object.keys(listProviders())) {
     for (const version of listCachedVersions(provider)) {
       for (const r of listResources(provider, version)) {
         if (r.isDataSource) continue;
-        params.push({ provider, version, service: r.service, resource: r.localName });
+        params.push({
+          provider,
+          version,
+          service: r.service,
+          resource: r.localName,
+        });
       }
     }
   }
@@ -30,7 +45,12 @@ export function generateStaticParams() {
 export default async function ResourcePage({
   params,
 }: {
-  params: Promise<{ provider: string; version: string; service: string; resource: string }>;
+  params: Promise<{
+    provider: string;
+    version: string;
+    service: string;
+    resource: string;
+  }>;
 }) {
   const { provider, version, service, resource } = await params;
   const cfg = getProvider(provider);
@@ -40,15 +60,20 @@ export default async function ResourcePage({
   if (!detail) notFound();
 
   return (
-    <>
-      <Header
-        nav={NAV}
-        mobileMenu={
-          <MobileSidebarToggle>
-            <ProviderSidebar providerKey={provider} version={version} current={{ service, localName: resource, isDataSource: false }} className="block" />
-          </MobileSidebarToggle>
-        }
-      />
+    <PageShell
+      nav={NAV}
+      sidebar={
+        <ProviderSidebar
+          providerKey={provider}
+          version={version}
+          current={{ service, localName: resource, isDataSource: false }}
+          className="block"
+        />
+      }
+      sidebarLabel="Services"
+      searchPlaceholder="Search resources and data sources..."
+      footer={FOOTER}
+    >
       <ResourceDetailView
         provider={provider}
         version={version}
@@ -58,6 +83,6 @@ export default async function ResourcePage({
         detail={detail}
         examples={exampleFor(provider, version, detail.wireType)}
       />
-    </>
+    </PageShell>
   );
 }
