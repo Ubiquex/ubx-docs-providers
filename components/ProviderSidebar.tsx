@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { SidebarSection, SidebarItemList, sidebarItemClass } from "@ubx/docs-ui";
 
 type SidebarItem = { service: string; localName: string; dottedName: string };
 type SidebarGroup = { label: string; resources: SidebarItem[]; dataSources: SidebarItem[] };
@@ -142,22 +143,18 @@ export function ProviderSidebar({
 
   function renderItems(items: SidebarItem[], isDataSource: boolean) {
     return (
-      <ul className="mt-1 space-y-0.5">
+      <SidebarItemList>
         {items.map((item) => (
           <li key={`${isDataSource ? "data" : "resource"}-${item.service}-${item.localName}`}>
             <Link
               href={itemHref(providerKey, version, item.service, item.localName, isDataSource)}
-              className={
-                isCurrent(item, isDataSource)
-                  ? "-ml-1 block rounded-r-full bg-primary/10 py-1 pl-6 pr-3 text-sm font-medium text-primary"
-                  : "-ml-1 block rounded-r-full py-1 pl-6 pr-3 text-sm text-foreground-muted hover:bg-surface hover:text-primary"
-              }
+              className={sidebarItemClass(isCurrent(item, isDataSource))}
             >
               {item.dottedName}
             </Link>
           </li>
         ))}
-      </ul>
+      </SidebarItemList>
     );
   }
 
@@ -201,24 +198,22 @@ export function ProviderSidebar({
                 {group.label}
               </button>
               {open && (
-                <div className="pl-1">
+                // The pl-1 that used to wrap both sections now lives
+                // inside SidebarSection, so each carries its own. Same
+                // rendering, and a lone section indents the same as one
+                // of a pair.
+                <>
                   {group.resources.length > 0 && (
-                    <div className="mt-1">
-                      <h4 className="px-2 text-xs font-bold uppercase tracking-wide text-foreground">
-                        Resources
-                      </h4>
+                    <SidebarSection heading="Resources" className="mt-1">
                       {renderItems(group.resources, false)}
-                    </div>
+                    </SidebarSection>
                   )}
                   {group.dataSources.length > 0 && (
-                    <div className="mt-2">
-                      <h4 className="px-2 text-xs font-bold uppercase tracking-wide text-foreground">
-                        Data sources
-                      </h4>
+                    <SidebarSection heading="Data sources" className="mt-2">
                       {renderItems(group.dataSources, true)}
-                    </div>
+                    </SidebarSection>
                   )}
-                </div>
+                </>
               )}
             </div>
           );
