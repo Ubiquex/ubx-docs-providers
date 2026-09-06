@@ -48,6 +48,18 @@
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular,
     "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
 
+  /* Header nav. ONE VALUE, and it must be the same on all three sites:
+     the bar is the same bar, so a reader moving between them should not
+     see the words change colour. #bdc1c6 is the design reference own
+     nav colour (its --secondary). Before this, the docs sites resolved
+     --color-foreground-muted to #5f6368 and the marketing site resolved
+     the same utility to #e8eaed, because its ported reference stylesheet
+     carries an unlayered `a { color: inherit }` that beats any Tailwind
+     utility. Neither was chosen; both were accidents of resolution.
+
+     There is deliberately no active or current variant. */
+  --color-nav: #bdc1c6;
+  --color-nav-hover: #e8eaed;
   --color-background: #ffffff;
   --color-surface: #f8f9fa;
   --color-field: #f1f3f4;
@@ -165,6 +177,12 @@
   --color-border: var(--color-border);
   --color-foreground: var(--color-foreground);
   --color-foreground-muted: var(--color-foreground-muted);
+  /* Mapped here as well as declared in :root above, because on this
+     site the utilities come from `@theme inline` and a raw :root
+     variable generates no class at all. Declared and unused looked
+     identical to working until the rendered colour was measured. */
+  --color-nav: var(--color-nav);
+  --color-nav-hover: var(--color-nav-hover);
 }
 
 html {
