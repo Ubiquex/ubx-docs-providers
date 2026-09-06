@@ -7,12 +7,12 @@ import type { NavLink } from "@ubx/docs-ui";
 // Documentation, Tutorials and Install at docs.ubiquex.io's real pages;
 // Providers is this site's own landing page.
 export const NAV: NavLink[] = [
-  { label: "Home", href: "https://ubiquex.github.io/ubiquex-web/" },
+  { label: "Home", href: "https://ubiquex.io" },
   { label: "Install", href: "https://docs.ubiquex.io/install" },
   { label: "Documentation", href: "https://docs.ubiquex.io" },
   { label: "Tutorials", href: "https://docs.ubiquex.io/tutorial" },
   { label: "Providers", href: "/" },
-  { label: "Blog", href: "https://ubiquex.github.io/ubiquex-web/blog" },
+  { label: "Blog", href: "https://ubiquex.io/blog/" },
 ];
 
 // Footer identity. Required props since @ubx/docs-ui 0.3.0: the shared
