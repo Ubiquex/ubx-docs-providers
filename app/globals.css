@@ -38,6 +38,16 @@
      f1f3f4 for fields and the code block (Material's own "surface
      variant" -- one step down, the tone form inputs and receding
      content sit on). */
+  /* Tailwind's own font tokens, so the font-sans and font-mono utility
+     classes resolve to the same faces the element rules below use.
+     Without these, anything carrying `font-mono` (CodeBlock's own <pre>
+     among them) falls back to ui-monospace while everything else
+     renders in JetBrains Mono. Two monospace faces on one page. */
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular,
+    "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
   --color-background: #ffffff;
   --color-surface: #f8f9fa;
   --color-field: #f1f3f4;
@@ -175,30 +185,10 @@ html {
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-poppins), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 code, pre, .font-mono-tabular {
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
-/* Header's own light/dark logo pair -- same [data-theme] contract as
-   the color tokens above, so the logo always matches whichever palette
-   is actually showing, explicit choice or OS default. */
-.logo-dark {
-  display: none;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .logo-light {
-    display: none;
-  }
-  :root:not([data-theme="light"]) .logo-dark {
-    display: block;
-  }
-}
-:root[data-theme="dark"] .logo-light {
-  display: none;
-}
-:root[data-theme="dark"] .logo-dark {
-  display: block;
-}
