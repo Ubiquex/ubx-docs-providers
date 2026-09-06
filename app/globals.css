@@ -83,13 +83,18 @@
        from that same file's OLD values (#2d2e30, #131314, #3c4043)
        by preserving each one's own HSL lightness delta from the OLD
        background (#1b1b1b) and re-applying that delta to the NEW one,
-       rather than picking new numbers by eye -- the same elevation
-       relationship (surface raised above page, code-bg receding below
-       it) carries over instead of being redrawn from scratch. */
+       rather than picking new numbers by eye.
+
+       --color-code-bg was #050506 here, one step BELOW the page, which
+       rendered code blocks near-black. Light mode does not do that: it
+       gives --color-field and --color-code-bg the same #f1f3f4, so a
+       code block sits on the field tone. Dark mode had diverged from
+       its own light-mode relationship, so it is brought back to match
+       --color-field exactly. */
     --color-background: #0d0d0d;
     --color-surface: #1f2022;
     --color-field: #1f2022;
-    --color-code-bg: #050506;
+    --color-code-bg: #1f2022;
     --color-border: #2f3234;
     --color-foreground: #e8eaed;
     --color-foreground-muted: #9aa0a6;
@@ -123,7 +128,7 @@
   --color-background: #0d0d0d;
   --color-surface: #1f2022;
   --color-field: #1f2022;
-  --color-code-bg: #050506;
+  --color-code-bg: #1f2022;
   --color-border: #2f3234;
   --color-foreground: #e8eaed;
   --color-foreground-muted: #9aa0a6;
