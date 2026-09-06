@@ -37,6 +37,31 @@ name: deploy
 on:
   push:
     branches: [main]
+    # Skip pushes that provably cannot change the built site.
+    #
+    # A DENY-LIST, not an allow-list, and that is the whole safety
+    # argument. `paths:` would mean anything not listed is skipped, so a
+    # new directory that does feed the build would silently stop
+    # deploying and the site would go stale with no failure anywhere.
+    # `paths-ignore:` fails the other way: anything unrecognised still
+    # deploys, and the worst case is one wasted run.
+    #
+    # Each entry below is checked, not assumed:
+    #   **.md    content is .mdx and the loader only reads .mdx, so no
+    #             .md file in either repo is ever rendered
+    #   infra/**  feeds `npm test` and CI only; the CloudFront function
+    #             is published by function-publish.yml, never by this
+    #   ci.yml / function-publish.yml  neither is read by `next build`
+    #
+    # deploy.yml itself is deliberately NOT ignored: a change to caching,
+    # invalidation or the sync steps should deploy.
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+      - "infra/**"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/function-publish.yml"
   workflow_dispatch:
     inputs:
       invalidate_all:
