@@ -45,45 +45,37 @@ function FieldRow({
   const atMaxDepth = nested.length > 0 && depth >= maxDepth;
 
   return (
-    <div className="py-3" id={topLevel ? `arg-${field.WireName}` : undefined}>
-      <dt className="flex items-center gap-2">
-        <span className="font-mono-tabular text-sm font-medium text-primary">{field.WireName}</span>
-        <span className="text-xs text-accent-yellow">{formatFieldType(field.Type)}</span>
+    <div className="ft-row" id={topLevel ? `arg-${field.WireName}` : undefined}>
+      <dt className="ft-dt">
+        <span className="ft-name">{field.WireName}</span>
+        <span className="ft-type">{formatFieldType(field.Type)}</span>
         {field.Required && <RequiredBadge />}
       </dt>
-      <dd className="mt-1 text-sm leading-relaxed text-foreground">
-        {desc || <span className="text-foreground-muted">No description available.</span>}
+      <dd className="ft-desc">
+        {desc || <span className="ft-nodesc">No description available.</span>}
       </dd>
       {nested.length > 0 && (
-        <details className="group mt-2 ml-1 border-l border-border pl-4">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded px-2 py-1.5 text-sm font-medium text-foreground-muted [&::-webkit-details-marker]:hidden hover:bg-surface hover:text-primary">
-            <svg
-              viewBox="0 0 16 16"
-              className="h-3 w-3 shrink-0 transition-transform group-open:rotate-90"
-              fill="none"
-              aria-hidden="true"
-            >
-              <path
-                d="M6 4l4 4-4 4"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+        <details className="ft-nest">
+          <summary className="ft-sum">
+            {/* One shared <symbol>, referenced per row, rather than the
+                same 240 bytes of path data inlined once per disclosure.
+                On the largest page that alone was 821KB of 11MB. */}
+            <svg className="ft-chev" aria-hidden="true">
+              <use href="#ft-chev" />
             </svg>
             {nested.length} propert{nested.length === 1 ? "y" : "ies"}
           </summary>
           {isCycle ? (
-            <p className="mt-2 text-sm text-foreground-muted">
+            <p className="ft-note">
               {field.WireName} recurs here; see its own properties above for the repeating pattern.
             </p>
           ) : atMaxDepth ? (
-            <p className="mt-2 text-sm text-foreground-muted">
+            <p className="ft-note">
               Nested structure continues beyond {maxDepth} levels of depth; further properties omitted for
               readability.
             </p>
           ) : (
-            <dl className="mt-2 divide-y divide-border">
+            <dl className="ft-list">
               {[...nested]
                 .sort((a, b) => a.WireName.localeCompare(b.WireName))
                 .map((child) => (
