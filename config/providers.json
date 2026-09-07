@@ -10,7 +10,7 @@
         "1.0.0",
         "1.1.0",
         "1.1.1",
-        "2.0.0"
+        "2.0.1"
       ],
       "outputCaveat": "Kubernetes's own OpenAPI spec marks read-only fields in prose, inside each field's own description text, rather than with a structural readOnly keyword. This reference has no way to detect that from the spec alone, so resources here never show a separate Output properties section, even where real server-set fields exist (for example ObjectMeta's own uid, resourceVersion, and creationTimestamp). This is a limitation of the upstream spec, not missing or broken data."
     },
@@ -22,7 +22,7 @@
       "versions": [
         "2.1.0",
         "2.2.1",
-        "3.0.0"
+        "3.0.1"
       ]
     },
     "azure": {
@@ -33,7 +33,7 @@
       "versions": [
         "1.2.0",
         "1.2.1",
-        "2.0.0"
+        "2.0.1"
       ]
     },
     "google": {
@@ -44,7 +44,7 @@
       "versions": [
         "1.3.0",
         "1.3.1",
-        "1.4.0"
+        "1.4.1"
       ]
     },
     "datadog": {
@@ -55,7 +55,7 @@
       "versions": [
         "1.3.0",
         "1.3.1",
-        "2.0.0"
+        "2.0.1"
       ]
     },
     "github": {
@@ -68,7 +68,7 @@
         "1.2.1",
         "1.2.2",
         "1.2.3",
-        "2.0.0"
+        "2.0.1"
       ]
     },
     "digitalocean": {
