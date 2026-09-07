@@ -35,7 +35,8 @@
 //    it). This site has never had that data for ANY example (see the
 //    prior goModuleFor/resourceExample this file replaces) -- kept as
 //    the same real, working, already-shipped construction
-//    (<goModule>/<provider>/<service>, @ubx/sdk-<provider>/<service>),
+//    (<go module path>/<provider>/<service>,
+//    @ubx/sdk-<provider>/<service>),
 //    not a new risk this pass introduces.
 //
 // What IS ported faithfully: real field selection (pickRicherExampleFields,
@@ -406,8 +407,27 @@ function fieldLiteralWithPreamble(f, lang) {
   return [null, fn(f)];
 }
 
-function goModuleFor(providerKey, goModule) {
-  return goModule ?? `github.com/ubiquex/ubx-sdk-${providerKey}/sdk/go`;
+function goModuleFor(providerKey, version) {
+  // Go's own rule, not a per-provider setting: a module path carries its
+  // major version from v2 onward and carries nothing below that. So the
+  // correct import path is a function of the VERSION being documented,
+  // and this site documents several versions of one provider at once.
+  //
+  // It used to come from a goModule field in config/providers.json, one
+  // value per provider, which could only ever be right for a provider
+  // whose listed versions all shared a major. aws was the only entry
+  // that set it, listing 2.1.0 and 2.2.1 against a hardcoded /v2, and it
+  // was correct by luck rather than by construction. The moment UBI-241's
+  // renames took aws to 3.0.0 alongside its own 2.x pages, one field
+  // could no longer describe both, and every 2.x example would have
+  // shown a /v3 import that does not resolve.
+  //
+  // Verified rather than reasoned about: this derivation was checked
+  // against the real go.mod at all 26 published tags this site serves,
+  // across all eight providers, and matches every one.
+  const major = Number(version.split(".")[0]);
+  const suffix = major >= 2 ? `/v${major}` : "";
+  return `github.com/ubiquex/ubx-sdk-${providerKey}/sdk/go${suffix}`;
 }
 
 // A real, found-running-gofmt bug: several real AWS/Azure service dirs
@@ -436,7 +456,7 @@ function goSafeAlias(service) {
 // ubx.Stack/ubx.Intent, stack()/intent()/resource(), describe()/
 // ubx.run()) -- see the file header for the two disclosed gaps
 // (Python nested class names, Go/TS import paths). ---
-function buildResourceRaw({ providerKey, goModule, service, localName, pascalName, fields }) {
+function buildResourceRaw({ providerKey, version, service, localName, pascalName, fields }) {
   const stackName = "example";
   const intentSummary = `${stackName} own ${localName.replace(/_/g, " ")}`;
   const exampleFields = pickRicherExampleFields(fields);
@@ -449,7 +469,7 @@ function buildResourceRaw({ providerKey, goModule, service, localName, pascalNam
   }
   const needsJson = goPreambles.some((p) => p.includes("json.Marshal("));
   const goAlias = goSafeAlias(service);
-  const goImportPath = `${goModuleFor(providerKey, goModule)}/${providerKey}/${service}`;
+  const goImportPath = `${goModuleFor(providerKey, version)}/${providerKey}/${service}`;
   const goLines = ["package main", "", "import ("];
   if (needsJson) goLines.push('\t"encoding/json"', "");
   goLines.push(`\tubx "github.com/ubiquex/ubx-sdk-go/runtime"`);
@@ -518,7 +538,7 @@ function buildResourceRaw({ providerKey, goModule, service, localName, pascalNam
   return { go: goLines.join("\n"), ts: tsLines.join("\n"), python: pyLines.join("\n") };
 }
 
-function buildDataSourceRaw({ providerKey, goModule, service, localName, pascalName, wireType, fields }) {
+function buildDataSourceRaw({ providerKey, version, service, localName, pascalName, wireType, fields }) {
   const lookupFields = fields.filter((f) => f.Required || !f.Computed).sort(byWireName);
   const exampleFields = pickRicherExampleFields(lookupFields);
   const intentSummary = `look up ${wireType}`;
@@ -530,7 +550,7 @@ function buildDataSourceRaw({ providerKey, goModule, service, localName, pascalN
     goAssigns.push(`\t\t\t${pascal(f.WireName)}: ${val},`);
   }
   const goAlias = goSafeAlias(service);
-  const goImportPath = `${goModuleFor(providerKey, goModule)}/${providerKey}/data/${service}`;
+  const goImportPath = `${goModuleFor(providerKey, version)}/${providerKey}/data/${service}`;
   const goLines = [
     "package main", "", "import (",
     `\t${goAlias} "${goImportPath}"`,
@@ -717,7 +737,7 @@ function main() {
         const pascalName = pascalCase(entry.localName);
         const ctx = {
           providerKey,
-          goModule: cfg.goModule,
+          version,
           service: entry.service,
           localName: entry.localName,
           pascalName,

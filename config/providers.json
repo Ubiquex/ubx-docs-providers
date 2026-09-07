@@ -1,12 +1,17 @@
 {
-  "$comment": "One entry per provider. versions lists every version this site serves, latest last -- the committed list, not a live release-list query per repo per build (UBI-240: a build that queries live lists produces different output depending on when it runs). Adding a version is a one-line change, visible in review. repo is the real GitHub repo the docs release lives on; each version's own release tag is a bare vX.Y.Z on that repo, distinct from its sdk/go/vX.Y.Z module tag. goModule is the real base Go import path recorded from that repo's own sdk/go/go.mod (module line, verbatim) -- most providers publish sdk/go/go.mod as github.com/ubiquex/ubx-sdk-<provider>/sdk/go and can omit this field entirely (lib/examples.ts defaults to that shape), but a provider whose own go.mod declares a real major-version suffix (confirmed directly, not assumed uniform: ubx-sdk-aws's own sdk/go/go.mod is .../sdk/go/v2) must record it here so generated example imports stay correct.",
+  "$comment": "One entry per provider. versions lists every version this site serves, latest last -- the committed list, not a live release-list query per repo per build (UBI-240: a build that queries live lists produces different output depending on when it runs). Adding a version is a one-line change, visible in review; scripts/check_sdk_pins.py fails the build when a release exists that is not listed here, so the one-line change is prompted rather than remembered. repo is the real GitHub repo the docs release lives on; each version's own release tag is a bare vX.Y.Z on that repo, distinct from its sdk/go/vX.Y.Z module tag. There is deliberately no goModule field: a Go module path carries its major version from v2 onward, so it is a function of the version being documented and is derived per version in scripts/build-examples.mjs. One field per provider could not describe aws once it served both 2.x and 3.0.0 pages.",
   "providers": {
     "kubernetes": {
       "name": "Kubernetes",
       "description": "Deployments, services, config, and everything else a real cluster runs.",
       "repo": "ubiquex/ubx-sdk-kubernetes",
       "tier": "official",
-      "versions": ["1.0.0", "1.1.0", "1.1.1"],
+      "versions": [
+        "1.0.0",
+        "1.1.0",
+        "1.1.1",
+        "2.0.0"
+      ],
       "outputCaveat": "Kubernetes's own OpenAPI spec marks read-only fields in prose, inside each field's own description text, rather than with a structural readOnly keyword. This reference has no way to detect that from the spec alone, so resources here never show a separate Output properties section, even where real server-set fields exist (for example ObjectMeta's own uid, resourceVersion, and creationTimestamp). This is a limitation of the upstream spec, not missing or broken data."
     },
     "aws": {
@@ -14,50 +19,78 @@
       "description": "Every real AWS resource and data source CloudFormation and the AWS SDKs expose, in one place.",
       "repo": "ubiquex/ubx-sdk-aws",
       "tier": "official",
-      "goModule": "github.com/ubiquex/ubx-sdk-aws/sdk/go/v2",
-      "versions": ["2.1.0", "2.2.1"]
+      "versions": [
+        "2.1.0",
+        "2.2.1",
+        "3.0.0"
+      ]
     },
     "azure": {
       "name": "Azure",
       "description": "Real Azure Resource Manager resources across every real ARM provider namespace.",
       "repo": "ubiquex/ubx-sdk-azure",
       "tier": "official",
-      "versions": ["1.2.0", "1.2.1"]
+      "versions": [
+        "1.2.0",
+        "1.2.1",
+        "2.0.0"
+      ]
     },
     "google": {
       "name": "Google Cloud",
       "description": "Real GCP resources and data sources, generated from Google's own discovery documents.",
       "repo": "ubiquex/ubx-sdk-google",
       "tier": "official",
-      "versions": ["1.3.0", "1.3.1"]
+      "versions": [
+        "1.3.0",
+        "1.3.1",
+        "1.4.0"
+      ]
     },
     "datadog": {
       "name": "Datadog",
       "description": "Monitors, dashboards, and everything else a real Datadog account configures.",
       "repo": "ubiquex/ubx-sdk-datadog",
       "tier": "official",
-      "versions": ["1.3.0", "1.3.1"]
+      "versions": [
+        "1.3.0",
+        "1.3.1",
+        "2.0.0"
+      ]
     },
     "github": {
       "name": "GitHub",
       "description": "Real repos, teams, and org configuration as GitHub's own REST API exposes it.",
       "repo": "ubiquex/ubx-sdk-github",
       "tier": "official",
-      "versions": ["1.2.0", "1.2.1", "1.2.2", "1.2.3"]
+      "versions": [
+        "1.2.0",
+        "1.2.1",
+        "1.2.2",
+        "1.2.3",
+        "2.0.0"
+      ]
     },
     "digitalocean": {
       "name": "DigitalOcean",
       "description": "Droplets, databases, and the rest of DigitalOcean's own real resource surface.",
       "repo": "ubiquex/ubx-sdk-digitalocean",
       "tier": "official",
-      "versions": ["1.0.0", "1.0.1"]
+      "versions": [
+        "1.0.0",
+        "1.0.1",
+        "1.0.2"
+      ]
     },
     "cloudflare": {
       "name": "Cloudflare",
       "description": "Zones, DNS, Workers, and the rest of Cloudflare's own real resource surface.",
       "repo": "ubiquex/ubx-sdk-cloudflare",
       "tier": "official",
-      "versions": ["1.0.1"]
+      "versions": [
+        "1.0.1",
+        "1.0.2"
+      ]
     }
   }
 }
