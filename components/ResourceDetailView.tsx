@@ -35,6 +35,22 @@ export function ResourceDetailView({
   // separately. PageShell owns both now.
   return (
     <>
+      {/* The chevron, defined once per page and referenced by every
+          field row's <use>. Inlining the path per row cost 821KB on the
+          largest page. Zero-sized and hidden so it never affects
+          layout. */}
+      <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}>
+        <symbol id="ft-chev" viewBox="0 0 16 16">
+          <path
+            d="M6 4l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </symbol>
+      </svg>
+    <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
@@ -133,6 +149,7 @@ export function ResourceDetailView({
               </>
             );
           })()}
+    </>
     </>
   );
 }
