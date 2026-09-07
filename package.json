@@ -12,7 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test infra/cloudfront/rewrite.test.mjs"
+    "test": "node --test infra/cloudfront/rewrite.test.mjs",
+    "check:size": "node scripts/check-export-size.mjs"
   },
   "dependencies": {
     "@ubx/docs-ui": "^0.14.0",
